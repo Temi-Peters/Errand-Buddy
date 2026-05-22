@@ -113,7 +113,7 @@ export function MultiBarChart({ data, bars, xKey, title, prefix = '' }) {
           <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: '#78716C' }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 11, fill: '#78716C' }} axisLine={false} tickLine={false}
             tickFormatter={(v) => `${prefix}${v}`} width={44} />
-          <Tooltip {...tooltipStyle} formatter={(v) => [`${prefix}${v}`]} />
+          <Tooltip {...tooltipStyle} formatter={(v) => [`${prefix}${Number(v) % 1 === 0 ? v : Number(v).toFixed(2)}`]} />
           <Legend wrapperStyle={{ fontSize: 12, color: '#78716C', paddingTop: 8 }} />
           {bars.map(({ key, label, color }) => (
             <Bar key={key} dataKey={key} name={label} fill={color} radius={[4, 4, 0, 0]} maxBarSize={36} />

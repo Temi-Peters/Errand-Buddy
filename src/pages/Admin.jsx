@@ -41,8 +41,8 @@ export default function Admin() {
     bookings.reduce((acc, b) => {
       const month = new Date(b.date).toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
       acc[month] = acc[month] || { month, revenue: 0, commission: 0 };
-      acc[month].revenue += Number(b.price);
-      acc[month].commission += Number(b.price) * 0.1;
+      acc[month].revenue = Math.round((acc[month].revenue + Number(b.price)) * 100) / 100;
+      acc[month].commission = Math.round((acc[month].commission + Number(b.price) * 0.1) * 100) / 100;
       return acc;
     }, {})
   ), [bookings]);
