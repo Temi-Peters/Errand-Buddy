@@ -1,48 +1,89 @@
-import { CheckCircle2 } from 'lucide-react';
-import Card from '../components/Card';
+import { Link } from 'react-router-dom';
+import Button from '../components/Button';
 
-const customer = ['Choose an errand', 'Pick a date/time', 'Get matched with a local runner', 'Track progress and message your runner', 'Rate the service'];
-const runner = ['Apply', 'Get approved', 'Accept local tasks', 'Complete errands', 'Get paid'];
+const customerSteps = [
+  { emoji: '📋', title: 'Book in 2 minutes', body: 'Choose your service, pick a date and time, and describe what you need.' },
+  { emoji: '🤝', title: 'We match a runner', body: 'A vetted local runner accepts your task and you get notified straight away.' },
+  { emoji: '📦', title: 'It gets done', body: 'Your runner completes the errand and marks it done. Track every step in real time.' },
+  { emoji: '⭐', title: 'Rate the service', body: 'Leave a quick rating after completion to keep quality high.' },
+];
 
-const Flow = ({ title, items }) => (
-  <Card className="p-6">
-    <h2 className="text-2xl font-extrabold text-ink">{title}</h2>
-    <div className="mt-6 space-y-4">
-      {items.map((item, index) => (
-        <div key={item} className="flex gap-4">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-hi font-extrabold text-muted">{index + 1}</span>
-          <div>
-            <p className="font-bold text-ink">{item}</p>
-            <p className="text-sm text-muted">Clear, accountable and easy to follow.</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  </Card>
-);
+const runnerSteps = [
+  { emoji: '✍️', title: 'Apply online', body: 'Fill in a short application. Takes about 5 minutes.' },
+  { emoji: '✅', title: 'Get approved', body: 'We review your application and let you know. Usually within 24 hours.' },
+  { emoji: '📍', title: 'Accept local tasks', body: 'Browse available jobs in your area and accept the ones that suit you.' },
+  { emoji: '💰', title: 'Get paid', body: 'Earn 90% of the booking value for every completed task.' },
+];
+
+const trust = [
+  { emoji: '🔍', label: 'Approval checks on every runner' },
+  { emoji: '💬', label: 'Direct in-app messaging' },
+  { emoji: '📲', label: 'Live status updates' },
+  { emoji: '⭐', label: 'Reviewed after every job' },
+];
 
 export default function HowItWorks() {
   return (
-    <div className="space-y-8">
-      <section>
+    <div className="space-y-16">
+
+      {/* Header */}
+      <section className="text-center">
         <span className="page-kicker">How it works</span>
-        <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-ink">A calmer way to get errands done</h1>
-        <p className="mt-3 max-w-2xl text-lg leading-8 text-muted">ErrandBuddy connects customers with approved local runners, with simple booking, messaging and completion tracking.</p>
+        <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-ink sm:text-5xl">Simple from start to finish</h1>
+        <p className="mx-auto mt-4 max-w-lg text-lg leading-8 text-muted">
+          Book in minutes. A local runner handles the rest.
+        </p>
       </section>
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Flow title="For customers" items={customer} />
-        <Flow title="For runners" items={runner} />
-      </div>
-      <Card className="bg-surface-hi p-6">
-        <h2 className="text-2xl font-extrabold text-ink">What keeps it reliable?</h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          {['Runner approval checks', 'Status updates', 'Reviews after completion'].map((item) => (
-            <p key={item} className="flex items-center gap-2 rounded-xl bg-surface p-4 font-bold text-ink">
-              <CheckCircle2 className="text-secondary" /> {item}
-            </p>
+
+      {/* Customer flow */}
+      <section>
+        <p className="mb-8 text-center text-xs font-bold uppercase tracking-widest text-muted">For customers</p>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {customerSteps.map(({ emoji, title, body }, i) => (
+            <div key={title} className="hover-glow relative flex flex-col items-center rounded-2xl border border-surface-hi bg-surface p-6 text-center shadow-soft">
+              <span className="text-5xl leading-none">{emoji}</span>
+              <span className="absolute right-4 top-4 text-xs font-black text-muted/40">{i + 1}</span>
+              <h3 className="mt-4 text-base font-bold text-ink">{title}</h3>
+              <p className="mt-2 text-sm leading-6 text-muted">{body}</p>
+            </div>
           ))}
         </div>
-      </Card>
+        <div className="mt-8 text-center">
+          <Button as={Link} to="/book" className="px-10">Book an errand</Button>
+        </div>
+      </section>
+
+      {/* Runner flow */}
+      <section>
+        <p className="mb-8 text-center text-xs font-bold uppercase tracking-widest text-muted">For runners</p>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {runnerSteps.map(({ emoji, title, body }, i) => (
+            <div key={title} className="hover-glow relative flex flex-col items-center rounded-2xl border border-surface-hi bg-surface p-6 text-center shadow-soft">
+              <span className="text-5xl leading-none">{emoji}</span>
+              <span className="absolute right-4 top-4 text-xs font-black text-muted/40">{i + 1}</span>
+              <h3 className="mt-4 text-base font-bold text-ink">{title}</h3>
+              <p className="mt-2 text-sm leading-6 text-muted">{body}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-8 text-center">
+          <Button as={Link} to="/become-a-runner" variant="outline" className="px-10">Become a runner</Button>
+        </div>
+      </section>
+
+      {/* Trust signals */}
+      <section>
+        <p className="mb-6 text-center text-xs font-bold uppercase tracking-widest text-muted">What keeps it reliable</p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {trust.map(({ emoji, label }) => (
+            <div key={label} className="flex flex-col items-center gap-3 rounded-2xl border border-surface-hi bg-surface p-5 text-center shadow-soft">
+              <span className="text-3xl">{emoji}</span>
+              <p className="text-sm font-semibold text-ink">{label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
     </div>
   );
 }
