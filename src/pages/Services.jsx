@@ -1,10 +1,9 @@
-import { Dog, Pill, Shirt, ShoppingBag, Store } from 'lucide-react';
+import { Pill, Shirt, ShoppingBag, Store } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Button from '../components/Button';
 import Card from '../components/Card';
 
 const services = [
-  ['Dog Walking', Dog, 'Local walks for busy days, short check-ins and regular routines.', '30 minute walks, park visits, feeding reminders', 'from £15'],
   ['Grocery Shopping', ShoppingBag, 'Practical help with weekly or one-off food shops.', 'Small shops, supermarket collections, essentials', 'from £18'],
   ['Prescription Pickup', Pill, 'Careful collection from local pharmacies.', 'Repeat prescriptions, pharmacy collection, delivery home', 'from £15'],
   ['Dry Cleaning', Shirt, 'Drop-off and collection support for busy households.', 'Suits, coats, dresses, local cleaners', 'from £15'],

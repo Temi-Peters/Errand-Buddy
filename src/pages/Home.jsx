@@ -1,9 +1,8 @@
-import { ArrowRight, ListChecks, PawPrint, Pill, Shirt, ShoppingCart } from 'lucide-react';
+import { ArrowRight, ListChecks, Pill, Shirt, ShoppingCart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Button from '../components/Button';
 
 const services = [
-  { name: 'Dog Walking',         Icon: PawPrint,     href: '/services' },
   { name: 'Grocery Shopping',    Icon: ShoppingCart, href: '/services' },
   { name: 'Prescription Pickup', Icon: Pill,         href: '/services' },
   { name: 'Dry Cleaning',        Icon: Shirt,        href: '/services' },

@@ -1,5 +1,4 @@
 export const serviceTypes = [
-  'Dog Walking',
   'Grocery Shopping',
   'Prescription Pickup',
   'Dry Cleaning',

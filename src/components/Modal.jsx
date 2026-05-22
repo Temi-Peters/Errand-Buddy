@@ -1,5 +1,4 @@
 import { X } from 'lucide-react';
-import Button from './Button';
 
 export default function Modal({ title, children, onClose }) {
   return (
@@ -10,9 +9,13 @@ export default function Modal({ title, children, onClose }) {
       <div className="w-full rounded-2xl bg-surface p-5 shadow-lift sm:max-w-lg" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="text-lg font-bold text-ink">{title}</h2>
-          <Button variant="ghost" className="min-h-11 w-11 px-0" onClick={onClose} aria-label="Close modal">
-            <X size={20} />
-          </Button>
+          <button
+            onClick={onClose}
+            aria-label="Close modal"
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-surface-hi text-ink transition hover:bg-stone-200 dark:hover:bg-zinc-700"
+          >
+            <X size={16} strokeWidth={2.5} />
+          </button>
         </div>
         {children}
       </div>

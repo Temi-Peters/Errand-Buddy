@@ -34,7 +34,7 @@ export default function Register() {
     setLoading(true);
     try {
       const user = await register({ ...form, role });
-      navigate(user.role === 'runner' ? '/runner/dashboard' : '/customer/dashboard');
+      navigate(user.role === 'runner' ? '/runner/dashboard' : '/welcome');
     } catch {
     } finally {
       setLoading(false);
