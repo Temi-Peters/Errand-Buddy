@@ -31,7 +31,7 @@ export default function Login() {
     <div className="mx-auto max-w-md">
       <Card>
         <h1 className="text-3xl font-black">Log in</h1>
-        <p className="mt-2 text-muted">Access your Errand Buddy account.</p>
+        <p className="mt-2 text-muted">Access your ErrandBuddy account.</p>
         <form onSubmit={submit} className="mt-6 space-y-4">
           <label className="block">
             <span className="font-semibold">Email</span>

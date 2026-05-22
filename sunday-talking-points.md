@@ -1,79 +1,109 @@
-# Errand Buddy — Talking Points & Q&A Prep
+# Errand Buddy — Talking Points
 ### Community Partners Showcase · Sunday
 
 ---
 
 ## The Core Narrative
 
-Lead with the human problem, not the technology. The tech is just how you solve it.
+Lead with people, not product. You're not pitching an app — you're asking whether a real problem in their community has a better solution than what currently exists.
 
-**Opening line options:**
-- "Community organisations already know what we're building for — the people who fall through the gaps when it comes to everyday errands. We've built the infrastructure to help at scale."
-- "We built Errand Buddy because the errand gap is real, it's daily, and for a lot of people it's invisible until it becomes a crisis."
-
-**The three things to land:**
-1. This is a real, working product — not a concept
-2. Runners are vetted; residents are protected
-3. You're here to learn from them, not sell to them
+**Opening line (set the tone):**
+> "We built this because the people who most need help with day-to-day tasks are often the last ones the market builds for. We want to change that — and we need your help to do it properly."
 
 ---
 
-## Key Messages by Audience Concern
+## Key Messages to Land
 
-### For council representatives
-- "We're not asking you to manage anything. You refer a resident, they book, a runner shows up. The admin stays with us."
-- "If there's appetite for a subsidised model — where the council funds bookings for residents who can't pay — we can explore that. It's technically straightforward on our end."
-- "We built the runner vetting because we knew trust would be the first question. Every runner is manually reviewed before they take a single job."
+**1. This is community infrastructure, not a gig app.**
+The distinction matters to councils and charities. Errand Buddy isn't Deliveroo — runners are vetted, bookings are structured, and the platform is built around trust and accountability. Emphasise the approval process, ratings, and messaging system.
 
-### For charity / third sector orgs
-- "The weekly subscription model was built specifically with ongoing support needs in mind — it's not a one-off service, it's a reliable pattern."
-- "Your staff spend time co-ordinating things like prescription pickups. This takes that off their plate without removing the human connection — the runner still shows up, still has a conversation."
-- "We want to understand your safeguarding concerns upfront, not discover them mid-pilot."
+**2. You extend their reach, you don't replace their work.**
+Organisations in this room already support vulnerable residents. You're offering them a logistics layer — a way to get more done without adding more staff or admin. The ask isn't "hand us your clients," it's "let us help you serve them better."
 
----
+**3. Local runners = local economy.**
+Runners aren't anonymous gig workers — they're people from the same neighbourhoods. This is a community benefit on both sides. Frame it as a win for residents who need help *and* residents who want flexible, meaningful local work.
 
-## Anticipated Questions & Honest Answers
-
-**"How do you vet runners?"**
-> Runners fill in an application with their area, transport method, and availability. Every application goes through a manual admin review before approval. We can reject or suspend runners at any time. We're still developing what the full vetting process looks like — this is something we'd want to build in partnership with community orgs who know what standards matter.
-
-**"What happens if something goes wrong — a runner steals, damages something, doesn't show up?"**
-> We have a dispute and cancellation flow built in. Runners are rated after every job, and poor performers get surfaced quickly. For the early pilot stage, we'd operate with a smaller, more carefully selected runner pool and a direct line to us for any issues. We're not trying to hide from this question — it's the right one to ask.
-
-**"Is it accessible? What about elderly people who don't use smartphones?"**
-> The web app works on any device including basic smartphones. For residents who aren't online, the vision is that organisations like yours could place bookings on their behalf — the platform supports that model. This is actually something we'd want your input on.
-
-**"How much does it cost residents?"**
-> Pricing depends on the service — grocery runs and prescription pickups are priced around what you'd expect for a local delivery service. Weekly subscriptions bring the per-errand cost down. We're open to discussing subsidised or community-funded models where affordability is a barrier.
-
-**"Who are the runners? Can I trust them with my vulnerable clients?"**
-> Right now we're in early recruitment. The expectation is local people — often people who are already community-embedded: neighbours, part-time workers, carers themselves. We vet every application and build in a rating system. For vulnerable client work, we'd want to explore enhanced checks — DBS checks, for example — as part of a formal partnership.
-
-**"Are you live yet?"**
-> Not yet — we're in demo stage. Sunday is specifically about finding the right early partners to co-design the pilot with us. We want to go live in the right way, not just fast.
-
-**"What do you need from us?"**
-> Honestly — your perspective on whether this addresses a real gap you see. And if it does: a conversation about whether there's a community to pilot with and what a safe, trusted rollout would look like from your side.
+**4. You're at the beginning, honestly.**
+Don't oversell. The MVP is built and working, but you have no live users yet. Being transparent about this builds trust — especially with orgs who've been burned by overpromising tech before. The goal of Sunday is to learn, not to close.
 
 ---
 
-## What NOT to Over-Promise
+## Likely Questions & How to Handle Them
 
-- Don't imply the platform is fully tested at scale
-- Don't commit to specific DBS check timelines without knowing the cost/process
-- Don't suggest payments are live (they're test-mode stubs)
-- Don't imply runners are already recruited in their area
+**"How do you vet runners? What stops a bad actor getting through?"**
+> "Every runner goes through a manual review before they're approved. We look at their area, transport, availability, and application details. We can add background check requirements as the platform matures — and we're open to discussing what threshold gives your organisation confidence."
 
-**The honest framing:** "We have a working product and a clear direction. We're here to make sure we build the right thing for the communities that need it — and that means talking to people like you before we go further."
+---
+
+**"What if something goes wrong during an errand?"**
+> "The platform keeps a full record — booking details, instructions, messages between runner and customer, and the payment trail. We're working on a formal dispute resolution process, and we'd want partners' input on what that needs to look like for their residents."
+
+---
+
+**"Is this affordable for the people we work with?"**
+> "Pricing is set to be accessible — one-off tasks and weekly subscriptions at rates that reflect real errand costs. For residents who genuinely can't afford it, we're exploring a subsidised model where an org or council can fund bookings on someone's behalf. That's one of the things we want to explore with you today."
+
+---
+
+**"We already have volunteers who do this kind of thing."**
+> "That's exactly the kind of thing we want to understand better. Volunteer networks are brilliant — but they're also fragile. We're not here to compete with that; we're asking whether a more structured, accountable layer could complement what you already have, especially for demand that outpaces what volunteers can cover."
+
+---
+
+**"What data do you hold on residents? Is it GDPR-compliant?"**
+> "We store only what's needed to process and fulfil bookings — name, contact details, address, booking history. The platform is built with data minimisation in mind. We're not selling data or profiling users. Full compliance documentation is something we're building out as we get closer to launch."
+
+---
+
+**"Are you planning to expand beyond [area]?"**
+> "Yes, eventually — but we want to do one area well first. That's why conversations like this matter. A community partner who can help us understand local needs properly is more valuable than scaling fast and getting it wrong."
+
+---
+
+**"How do you make money?"**
+> "The platform takes a small percentage of each booking — currently set at 10%. The runner receives the rest directly. There's no subscription fee for customers or runners. If we explore a subsidised model with an org, we'd agree the commercial terms as part of that partnership."
+
+---
+
+**"Is the app available now? Can I sign up?"**
+> "The platform is built and fully functional — what you've seen today is real, working software. We're not open to the public yet because we want to ensure quality before we scale. We're looking for a small number of early partners to co-pilot with us."
+
+---
+
+## Things to Listen For
+
+These signals tell you whether there's a real partnership opportunity:
+
+- They describe a specific resident or group who would benefit → **hot signal**
+- They ask about referral processes or how their staff would use it → **engaged**
+- They mention budget cycles or funding rounds → **possible subsidised model opportunity**
+- They mention existing volunteer or support programmes → **potential to complement, not compete**
+- They raise safeguarding unprompted → **take seriously, don't deflect** — it's a sign they're thinking about real deployment
+
+---
+
+## What You're NOT There to Do
+
+- Sign anyone up or commit to a launch date
+- Promise features that don't exist yet
+- Speak for data protection or legal compliance beyond what's built
+- Oversell the current state of the product
 
 ---
 
 ## Closing the Conversation
 
-End every conversation with a concrete next step, not a vague "stay in touch":
+End each conversation with a clear next step:
 
-- "Could we schedule a 30-minute follow-up call this week to go deeper on your specific context?"
-- "Is there a resident cohort or a community programme we could observe or learn from?"
-- "Would it be useful if I sent you a one-page summary you could share internally?"
+> "Could we set up a follow-up call in the next couple of weeks? I'd love to understand your residents' needs in more detail and explore whether a pilot makes sense."
 
-Collect: name, org, email, and what resonated most / biggest concern.
+Collect: name, email, organisation, and a one-line note on what they said resonated most.
+
+---
+
+## Things to Have Ready
+
+- A phone or laptop with the app running (backup: screenshots of each screen)
+- A short URL or QR code to the demo (even if it's just localhost — bring your own laptop)
+- Business cards or a simple contact card with your email
+- A notepad to capture what people say — their exact words are gold for messaging later

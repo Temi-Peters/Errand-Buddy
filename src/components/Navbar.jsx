@@ -27,7 +27,7 @@ export default function Navbar() {
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-stone-900 text-white shadow-soft dark:bg-zinc-100 dark:text-zinc-900">
             <PackageCheck size={18} />
           </span>
-          Errand<span className="font-extrabold">Buddy</span>
+          ErrandBuddy
         </Link>
 
         <div className="hidden items-center gap-0.5 md:flex">

@@ -27,7 +27,7 @@ function ProtectedRoute({ role, children }) {
 export default function App() {
   const { serviceUnavailable } = useApp();
   if (serviceUnavailable) {
-    return <Layout><div className="mx-auto max-w-xl rounded-2xl border border-surface-hi bg-surface p-8 text-center shadow-soft"><h1 className="text-3xl font-extrabold text-ink">Service temporarily unavailable</h1><p className="mt-3 text-muted">We cannot reach Errand Buddy right now. Please try again shortly.</p></div></Layout>;
+    return <Layout><div className="mx-auto max-w-xl rounded-2xl border border-surface-hi bg-surface p-8 text-center shadow-soft"><h1 className="text-3xl font-extrabold text-ink">Service temporarily unavailable</h1><p className="mt-3 text-muted">We cannot reach ErrandBuddy right now. Please try again shortly.</p></div></Layout>;
   }
 
   return (

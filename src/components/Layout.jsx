@@ -22,7 +22,7 @@ export default function Layout({ children }) {
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-stone-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
                   <PackageCheck size={15} />
                 </span>
-                Errand<span className="font-extrabold">Buddy</span>
+                ErrandBuddy
               </Link>
               <p className="mt-3 max-w-xs text-sm leading-6 text-muted">
                 Trusted local errand support across Leicester. Vetted runners, clear pricing, real updates.

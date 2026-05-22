@@ -27,7 +27,7 @@ export default function HowItWorks() {
       <section>
         <span className="page-kicker">How it works</span>
         <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-ink">A calmer way to get errands done</h1>
-        <p className="mt-3 max-w-2xl text-lg leading-8 text-muted">Errand Buddy connects customers with approved local runners, with simple booking, messaging and completion tracking.</p>
+        <p className="mt-3 max-w-2xl text-lg leading-8 text-muted">ErrandBuddy connects customers with approved local runners, with simple booking, messaging and completion tracking.</p>
       </section>
       <div className="grid gap-5 lg:grid-cols-2">
         <Flow title="For customers" items={customer} />

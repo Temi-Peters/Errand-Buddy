@@ -27,7 +27,7 @@ export default function RunnerDashboard() {
   }, [contact]);
 
   if (!runner) return <Card className="text-center"><p className="font-bold text-muted">Runner profile is loading.</p></Card>;
-  if (runner.status === 'Pending') return <Card className="mx-auto max-w-2xl p-8 text-center"><ClipboardList className="mx-auto text-primary" size={42} /><h1 className="mt-4 text-3xl font-black">Application under review</h1><p className="mt-3 text-muted">Thanks for applying to become an Errand Buddy runner. We are reviewing your application and will contact you when a decision is made.</p></Card>;
+  if (runner.status === 'Pending') return <Card className="mx-auto max-w-2xl p-8 text-center"><ClipboardList className="mx-auto text-primary" size={42} /><h1 className="mt-4 text-3xl font-black">Application under review</h1><p className="mt-3 text-muted">Thanks for applying to become an ErrandBuddy runner. We are reviewing your application and will contact you when a decision is made.</p></Card>;
   if (runner.status === 'Rejected') return <Card className="mx-auto max-w-2xl p-8 text-center"><h1 className="text-3xl font-black">Application not approved</h1><p className="mt-3 text-muted">{runner.rejectionReason || 'Your application was not approved. Contact support if you have questions.'}</p></Card>;
   if (runner.status === 'Suspended') return <Card className="mx-auto max-w-2xl p-8 text-center"><h1 className="text-3xl font-black">Runner account suspended</h1><p className="mt-3 text-muted">Your runner account is currently suspended. Please contact support for help.</p></Card>;
 

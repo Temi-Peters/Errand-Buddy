@@ -25,7 +25,7 @@
 **What to show:** Click through to `/services` then `/pricing`
 
 **What to say:**
-> "The five services we cover today are the ones that came up most often when we talked to people about what they genuinely struggle with — prescription pickups and grocery runs top the list."
+> "The five services we cover today are the ones we believe are most commonly needed — prescription pickups, grocery runs, dry cleaning, dog walking, and general errands. Part of what we're here to find out is whether that matches what you actually see in your communities."
 
 > "On pricing, customers can choose a one-off booking or a weekly subscription. For someone who needs a grocery run every Thursday, the subscription means they set it once and it just happens."
 
