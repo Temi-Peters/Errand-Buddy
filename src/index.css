@@ -62,38 +62,40 @@ select {
 
 /* ── Glow token — flips for dark mode ───────────────────── */
 :root {
-  --glow-color: rgba(28,25,23,0.09);
-  --glow-ring:  rgba(28,25,23,0.08);
+  --glow-color: rgba(28,25,23,0.13);
+  --glow-ring:  rgba(28,25,23,0.11);
 }
 .dark {
-  --glow-color: rgba(245,245,247,0.09);
-  --glow-ring:  rgba(245,245,247,0.08);
+  --glow-color: rgba(245,245,247,0.13);
+  --glow-ring:  rgba(245,245,247,0.11);
 }
 
 /* ── Hoverable glow utility ─────────────────────────────── */
 .hover-glow {
-  transition: transform 0.25s cubic-bezier(0.25,0.46,0.45,0.94),
-              box-shadow 0.25s cubic-bezier(0.25,0.46,0.45,0.94);
+  transition: transform 0.28s cubic-bezier(0.25,0.46,0.45,0.94),
+              box-shadow 0.28s cubic-bezier(0.25,0.46,0.45,0.94),
+              border-color 0.28s ease;
 }
 .hover-glow:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 0 3px var(--glow-ring), 0 6px 24px var(--glow-color);
+  transform: translateY(-3px);
+  box-shadow: 0 0 0 3px var(--glow-ring), 0 8px 28px var(--glow-color);
 }
 .hover-glow:active {
   transform: translateY(0);
   box-shadow: 0 0 0 2px var(--glow-ring), 0 2px 8px var(--glow-color);
 }
 
-/* ── Button glow (subtle lift, no translateY) ───────────── */
+/* ── Button glow ────────────────────────────────────────── */
 .btn-glow {
-  transition: transform 0.2s cubic-bezier(0.25,0.46,0.45,0.94),
-              box-shadow 0.2s cubic-bezier(0.25,0.46,0.45,0.94),
-              background-color 0.2s ease,
-              color 0.2s ease;
+  transition: transform 0.22s cubic-bezier(0.25,0.46,0.45,0.94),
+              box-shadow 0.22s cubic-bezier(0.25,0.46,0.45,0.94),
+              background-color 0.22s ease,
+              color 0.22s ease,
+              border-color 0.22s ease;
 }
 .btn-glow:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 0 0 3px var(--glow-ring), 0 4px 16px var(--glow-color);
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 3px var(--glow-ring), 0 6px 20px var(--glow-color);
 }
 .btn-glow:active:not(:disabled) {
   transform: translateY(0);

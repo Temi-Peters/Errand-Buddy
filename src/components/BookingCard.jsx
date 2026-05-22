@@ -4,7 +4,7 @@ import StatusBadge from './StatusBadge';
 
 export default function BookingCard({ booking, runner, customer, actions }) {
   return (
-    <Card className="transition hover:-translate-y-0.5 hover:shadow-lift">
+    <Card className="hover-glow">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">

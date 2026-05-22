@@ -13,17 +13,17 @@ export default function BecomeRunner() {
         <Button as={Link} to="/register" state={{ role: 'runner' }} variant="white" className="mt-7">Apply as Runner</Button>
       </section>
       <div className="grid gap-5 md:grid-cols-3">
-        <Card>
+        <Card className="hover-glow">
           <WalletCards className="text-secondary" size={20} />
           <h2 className="mt-4 text-xl font-bold text-ink">Keep 90%</h2>
           <p className="mt-2 text-muted">Fair payouts are built into the marketplace model.</p>
         </Card>
-        <Card>
+        <Card className="hover-glow">
           <MapPin className="text-muted" size={20} />
           <h2 className="mt-4 text-xl font-bold text-ink">Local areas</h2>
           <p className="mt-2 text-muted">Oadby, Stoneygate, Knighton, Clarendon Park, Evington and nearby.</p>
         </Card>
-        <Card>
+        <Card className="hover-glow">
           <Bike className="text-secondary" size={20} />
           <h2 className="mt-4 text-xl font-bold text-ink">Flexible travel</h2>
           <p className="mt-2 text-muted">Car, bike, public transport or walking routes can all work.</p>
