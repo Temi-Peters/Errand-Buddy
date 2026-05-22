@@ -1,14 +1,14 @@
-import { ArrowRight, CheckCircle2, Clock, MapPin, MessageSquare, ShieldCheck, ShoppingBag, Star, Users, WalletCards } from 'lucide-react';
+import { ArrowRight, ListChecks, MessageSquare, PawPrint, Pill, ShieldCheck, Shirt, ShoppingCart, Star, Users, WalletCards } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Button from '../components/Button';
 import Card from '../components/Card';
 
 const services = [
-  { name: 'Dog Walking',         Icon: Clock,        desc: 'Regular walks from trusted local runners.' },
-  { name: 'Grocery Shopping',    Icon: ShoppingBag,  desc: 'Weekly shop handled with your exact list.' },
-  { name: 'Prescription Pickup', Icon: ShieldCheck,  desc: 'Medication collected and delivered safely.' },
-  { name: 'Dry Cleaning',        Icon: CheckCircle2, desc: 'Drop-off and collection made effortless.' },
-  { name: 'General Errands',     Icon: MapPin,       desc: 'Anything local — we handle the legwork.' },
+  { name: 'Dog Walking',         Icon: PawPrint,     desc: 'Regular walks from trusted local runners.' },
+  { name: 'Grocery Shopping',    Icon: ShoppingCart, desc: 'Weekly shop handled with your exact list.' },
+  { name: 'Prescription Pickup', Icon: Pill,         desc: 'Medication collected and delivered safely.' },
+  { name: 'Dry Cleaning',        Icon: Shirt,        desc: 'Drop-off and collection made effortless.' },
+  { name: 'General Errands',     Icon: ListChecks,   desc: 'Anything local — we handle the legwork.' },
 ];
 
 const stats = [
