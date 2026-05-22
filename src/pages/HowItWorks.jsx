@@ -91,7 +91,7 @@ export default function HowItWorks() {
                   : 'text-muted hover:text-ink'
               }`}
             >
-              {role === 'customer' ? 'I need help' : 'I want to earn'}
+              {role === 'customer' ? 'I need help' : 'I want to help'}
             </button>
           ))}
         </div>
