@@ -80,27 +80,33 @@ export const AppProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    api.health()
-      .then(() => setServiceUnavailable(false))
-      .catch((error) => {
-        if (error instanceof ApiUnavailableError) setServiceUnavailable(true);
-      });
-
     const restoreSession = async () => {
-      if (!getToken()) return;
+      // Retry up to 4 times (covers Render free tier cold start ~50s)
+      for (let attempt = 0; attempt < 4; attempt++) {
+        try {
+          if (attempt > 0) await new Promise((r) => setTimeout(r, 15000));
 
-      try {
-        const response = await api.me();
-        setAuthUser(response.user);
-        await refreshFromApi(response.user);
-      } catch (error) {
-        if (error instanceof ApiRequestError && error.status === 401) {
-          clearSession();
+          await api.health();
+          setServiceUnavailable(false);
+
+          if (!getToken()) { setAuthLoading(false); return; }
+
+          const response = await api.me();
+          setAuthUser(response.user);
+          await refreshFromApi(response.user);
+          setAuthLoading(false);
+          return;
+        } catch (error) {
+          if (error instanceof ApiRequestError && error.status === 401) {
+            clearSession();
+            setAuthLoading(false);
+            return;
+          }
+          if (error instanceof ApiUnavailableError && attempt < 3) continue;
+          if (error instanceof ApiUnavailableError) setServiceUnavailable(true);
         }
-        if (error instanceof ApiUnavailableError) setServiceUnavailable(true);
-      } finally {
-        setAuthLoading(false);
       }
+      setAuthLoading(false);
     };
 
     restoreSession();
