@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import BookingCard from '../components/BookingCard';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import { BarChartHorizontal, BarChartVertical } from '../components/Charts';
 import Modal from '../components/Modal';
 import { useApp } from '../context/AppContext';
 
@@ -41,6 +42,24 @@ export default function RunnerDashboard() {
   const completed = bookings.filter((booking) => booking.runnerId === runner.id && booking.status === 'Completed');
   const earnings = completed.reduce((sum, booking) => sum + payout(booking.price), 0);
   const ratings = completed.map((booking) => booking.rating?.stars).filter(Boolean);
+
+  // Chart data
+  const earningsByMonth = Object.values(
+    completed.reduce((acc, booking) => {
+      const month = new Date(booking.date).toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
+      acc[month] = acc[month] || { month, earnings: 0 };
+      acc[month].earnings += payout(booking.price);
+      return acc;
+    }, {})
+  );
+
+  const tasksByService = Object.values(
+    myTasks.reduce((acc, booking) => {
+      acc[booking.serviceType] = acc[booking.serviceType] || { name: booking.serviceType, tasks: 0 };
+      acc[booking.serviceType].tasks += 1;
+      return acc;
+    }, {})
+  ).sort((a, b) => b.tasks - a.tasks);
 
   const accept = async (booking) => {
     await acceptBooking(booking.id);
@@ -90,7 +109,35 @@ export default function RunnerDashboard() {
       <div className="flex gap-2 overflow-x-auto rounded-xl bg-surface-hi p-2">{tabs.map((tab) => <button key={tab} onClick={() => setActiveTab(tab)} className={`min-h-11 whitespace-nowrap rounded-lg px-4 font-semibold transition duration-150 ${activeTab === tab ? 'bg-stone-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'text-muted hover:bg-surface hover:text-ink'}`}>{tab}</button>)}</div>
       {activeTab === 'Available Tasks' && <div className="grid gap-4">{available.length ? available.map((booking, index) => <BookingCard key={booking.id} booking={booking} actions={<><p className="font-bold text-secondary">Runner payout: £{payout(booking.price)}</p><p className="text-sm text-muted">{(0.7 + index * 0.4).toFixed(1)} miles away</p><Button onClick={() => accept(booking)}>Accept Task</Button></>} />) : <Card className="border-dashed text-center"><p className="font-bold text-muted">No open tasks in your area</p><p className="mt-1 text-sm text-muted">Check back later for new local errands.</p></Card>}</div>}
       {activeTab === 'My Tasks' && <div className="space-y-6">{Object.entries(groupedTasks).map(([status, items]) => <section key={status}><h2 className="mb-3 text-xl font-bold">{status}</h2><div className="grid gap-4">{items.length ? items.map(renderTask) : <Card><p className="text-muted">No {status.toLowerCase()} tasks.</p></Card>}</div></section>)}</div>}
-      {activeTab === 'Earnings' && <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><Card><p className="text-muted">This week</p><p className="text-3xl font-black">£{earnings.toFixed(2)}</p></Card><Card><p className="text-muted">This month</p><p className="text-3xl font-black">£{earnings.toFixed(2)}</p></Card><Card><p className="text-muted">Completed tasks</p><p className="text-3xl font-black">{completed.length}</p></Card><Card><p className="text-muted">Average rating</p><p className="text-3xl font-black">{ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : runner.rating}</p></Card></div>}
+      {activeTab === 'Earnings' && (
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Card><p className="text-sm font-bold text-muted">Total earned</p><p className="text-3xl font-black">£{earnings.toFixed(2)}</p></Card>
+            <Card><p className="text-sm font-bold text-muted">Completed tasks</p><p className="text-3xl font-black">{completed.length}</p></Card>
+            <Card><p className="text-sm font-bold text-muted">Avg per task</p><p className="text-3xl font-black">£{completed.length ? (earnings / completed.length).toFixed(2) : '0.00'}</p></Card>
+            <Card><p className="text-sm font-bold text-muted">Avg rating</p><p className="text-3xl font-black">{ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : runner.rating}</p></Card>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Card>
+              <BarChartVertical
+                data={earningsByMonth}
+                dataKey="earnings"
+                xKey="month"
+                title="Earnings by month (£)"
+                prefix="£"
+              />
+            </Card>
+            <Card>
+              <BarChartHorizontal
+                data={tasksByService}
+                dataKey="tasks"
+                yKey="name"
+                title="Tasks by service type"
+              />
+            </Card>
+          </div>
+        </div>
+      )}
       {activeTab === 'Messages' && (
         <div className="space-y-4">
           {myTasks.filter((booking) => ['Assigned', 'In Progress'].includes(booking.status)).length ? (

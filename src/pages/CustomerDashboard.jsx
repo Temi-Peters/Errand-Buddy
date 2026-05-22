@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import BookingCard from '../components/BookingCard';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import { BarChartHorizontal, DonutChart } from '../components/Charts';
 import Modal from '../components/Modal';
 import { useApp } from '../context/AppContext';
 
@@ -28,6 +29,19 @@ export default function CustomerDashboard() {
   const activeCount = mine.filter((booking) => !['Completed', 'Cancelled'].includes(booking.status)).length;
   const completedCount = grouped.Completed.length;
   const totalSpend = mine.reduce((sum, booking) => sum + Number(booking.price), 0);
+
+  const statusChartData = Object.entries(grouped)
+    .map(([name, items]) => ({ name, value: items.length }))
+    .filter((d) => d.value > 0);
+
+  const spendByService = Object.values(
+    mine.reduce((acc, booking) => {
+      const key = booking.serviceType;
+      acc[key] = acc[key] || { name: key, spend: 0 };
+      acc[key].spend += Number(booking.price);
+      return acc;
+    }, {})
+  ).sort((a, b) => b.spend - a.spend);
 
   const saveRating = () => {
     updateBooking(ratingBooking.id, { rating: { stars, review } });
@@ -92,6 +106,22 @@ export default function CustomerDashboard() {
         <Card><div className="flex items-center justify-between"><div><p className="text-sm font-bold text-muted">Completed</p><p className="text-3xl font-black text-ink">{completedCount}</p></div><CalendarCheck className="text-secondary" /></div></Card>
         <Card className="col-span-2 sm:col-span-1"><div className="flex items-center justify-between"><div><p className="text-sm font-bold text-muted">Booked value</p><p className="text-3xl font-black text-ink">£{totalSpend.toFixed(0)}</p></div><WalletCards className="text-primary" /></div></Card>
       </div>
+      {mine.length > 0 && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Card>
+            <DonutChart data={statusChartData} title="Bookings by status" />
+          </Card>
+          <Card>
+            <BarChartHorizontal
+              data={spendByService}
+              dataKey="spend"
+              yKey="name"
+              title="Spend by service (£)"
+              prefix="£"
+            />
+          </Card>
+        </div>
+      )}
       {subscription && <Card className="border-secondary/40"><h2 className="font-bold text-ink">Active subscription</h2><p className="text-muted">{subscription.bookingType} for {subscription.serviceType}, £{subscription.price}/week</p></Card>}
       {Object.entries(grouped).map(([status, items]) => (
         <section key={status}>

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { BarChart3, ClipboardList, MessageSquare, PoundSterling, UserCheck, Users } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import { BarChartHorizontal, BarChartVertical, DonutChart, MultiBarChart } from '../components/Charts';
 import StatusBadge from '../components/StatusBadge';
 import { useApp } from '../context/AppContext';
 
@@ -20,6 +21,41 @@ export default function Admin() {
   const feedback = bookings.filter((booking) => booking.rating);
 
   const recent = useMemo(() => [...bookings].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5), [bookings]);
+
+  // Chart data
+  const bookingsByStatus = useMemo(() => {
+    const counts = {};
+    bookings.forEach((b) => { counts[b.status] = (counts[b.status] || 0) + 1; });
+    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+  }, [bookings]);
+
+  const bookingsByService = useMemo(() => {
+    const counts = {};
+    bookings.forEach((b) => { counts[b.serviceType] = (counts[b.serviceType] || 0) + 1; });
+    return Object.entries(counts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [bookings]);
+
+  const revenueByMonth = useMemo(() => Object.values(
+    bookings.reduce((acc, b) => {
+      const month = new Date(b.date).toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
+      acc[month] = acc[month] || { month, revenue: 0, commission: 0 };
+      acc[month].revenue += Number(b.price);
+      acc[month].commission += Number(b.price) * 0.1;
+      return acc;
+    }, {})
+  ), [bookings]);
+
+  const runnerLeaderboard = useMemo(() => runners
+    .filter((r) => r.status === 'Active')
+    .map((r) => ({
+      name: r.name.split(' ')[0],
+      tasks: bookings.filter((b) => b.runnerId === r.id && b.status === 'Completed').length
+    }))
+    .sort((a, b) => b.tasks - a.tasks)
+    .slice(0, 6),
+  [runners, bookings]);
 
   const assign = (bookingId, runnerId) => {
     updateBooking(bookingId, { runnerId, status: 'Assigned' });
@@ -43,6 +79,17 @@ export default function Admin() {
             <Card><BarChart3 className="text-primary" /><p className="mt-3 text-sm font-bold text-muted">Commission</p><p className="text-3xl font-black">£{(revenue * 0.1).toFixed(0)}</p></Card>
             <Card><UserCheck className="text-secondary" /><p className="mt-3 text-sm font-bold text-muted">Active runners</p><p className="text-3xl font-black">{runners.filter((runner) => runner.status === 'Active').length}</p></Card>
             <Card><Users className="text-primary" /><p className="mt-3 text-sm font-bold text-muted">Applications</p><p className="text-3xl font-black">{runners.filter((runner) => runner.status === 'Pending').length}</p></Card>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Card>
+              <DonutChart data={bookingsByStatus} title="Bookings by status" />
+            </Card>
+            <Card>
+              <BarChartHorizontal data={bookingsByService} dataKey="count" yKey="name" title="Bookings by service" />
+            </Card>
+            <Card>
+              <BarChartVertical data={runnerLeaderboard} dataKey="tasks" xKey="name" title="Runner leaderboard (completed tasks)" />
+            </Card>
           </div>
           <Card><h2 className="mb-3 text-xl font-bold">Recent bookings</h2><div className="space-y-3">{recent.map((booking) => <div key={booking.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-surface-hi pb-3 last:border-0"><span className="font-semibold">{booking.serviceType} · {customerName(booking.customerId)}</span><StatusBadge status={booking.status} /></div>)}</div></Card>
         </div>
@@ -79,7 +126,27 @@ export default function Admin() {
       {activeTab === 'Customers' && <Card className="overflow-x-auto"><table className="w-full min-w-[640px] text-left text-sm"><thead><tr className="text-muted"><th className="p-2">Customer</th><th>Email</th><th>Phone</th><th>Bookings</th></tr></thead><tbody>{customers.map((customer) => <tr key={customer.id} className="border-t border-surface-hi"><td className="p-2 font-bold">{customer.name}<span className="block font-normal text-muted">{customer.address}</span></td><td>{customer.email}</td><td>{customer.phone}</td><td>{bookings.filter((booking) => booking.customerId === customer.id).length}</td></tr>)}</tbody></table></Card>}
       {activeTab === 'Messages' && <Card className="text-center"><MessageSquare className="mx-auto text-primary" /><h2 className="mt-3 text-xl font-bold">Message threads</h2><p className="mt-2 text-muted">Admin support visibility is available through booking conversations in the API. A threaded support inbox can be added after launch.</p></Card>}
       {activeTab === 'Customer Feedback' && <div className="grid gap-4">{feedback.length ? feedback.map((booking) => <Card key={booking.id}><div className="flex flex-wrap justify-between gap-3"><div><h3 className="font-bold">{booking.serviceType}</h3><p className="text-muted">{customerName(booking.customerId)} about {runnerName(booking.runnerId)}</p></div><p className="font-black text-secondary">{booking.rating.stars} stars</p></div><p className="mt-3 text-muted">{booking.rating.review}</p></Card>) : <Card><p className="text-muted">No feedback yet.</p></Card>}</div>}
-      {activeTab === 'Revenue' && <div className="grid gap-4 sm:grid-cols-3"><Card><p className="text-muted">Customer payments</p><p className="text-3xl font-black">£{revenue.toFixed(2)}</p></Card><Card><p className="text-muted">Runner payouts</p><p className="text-3xl font-black">£{runnerPayouts.toFixed(2)}</p></Card><Card><p className="text-muted">Platform commission</p><p className="text-3xl font-black">£{(revenue - runnerPayouts).toFixed(2)}</p></Card></div>}
+      {activeTab === 'Revenue' && (
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Card><p className="text-sm font-bold text-muted">Customer payments</p><p className="text-3xl font-black">£{revenue.toFixed(2)}</p></Card>
+            <Card><p className="text-sm font-bold text-muted">Runner payouts</p><p className="text-3xl font-black">£{runnerPayouts.toFixed(2)}</p></Card>
+            <Card><p className="text-sm font-bold text-muted">Platform commission</p><p className="text-3xl font-black">£{(revenue - runnerPayouts).toFixed(2)}</p></Card>
+          </div>
+          <Card>
+            <MultiBarChart
+              data={revenueByMonth}
+              xKey="month"
+              title="Revenue vs commission by month"
+              prefix="£"
+              bars={[
+                { key: 'revenue', label: 'Revenue', color: '#1C1917' },
+                { key: 'commission', label: 'Commission', color: '#A8A29E' }
+              ]}
+            />
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
