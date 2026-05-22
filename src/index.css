@@ -12,11 +12,11 @@
 }
 
 .dark {
-  --color-ink:        250 250 249;    /* #FAFAF9  stone-50  */
-  --color-muted:      168 162 158;    /* #A8A29E  stone-400 */
-  --color-surface:    28 25 23;       /* #1C1917  stone-900 */
-  --color-surface-hi: 41 37 36;      /* #292524  stone-800 */
-  --color-page:       12 10 9;        /* warm near-black    */
+  --color-ink:        245 245 247;    /* #F5F5F7  Apple dark text    */
+  --color-muted:      134 134 139;    /* #86868B  Apple secondary    */
+  --color-surface:    28 28 30;       /* #1C1C1E  Apple dark surface */
+  --color-surface-hi: 44 44 46;      /* #2C2C2E  Apple elevated     */
+  --color-page:       0 0 0;          /* #000000  true black         */
 }
 
 /* ── Base ─────────────────────────────────────────────────── */
@@ -71,7 +71,7 @@ select {
 
 .page-kicker {
   @apply inline-flex rounded-full border border-stone-200 bg-stone-100 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-stone-500
-         dark:border-stone-700 dark:bg-stone-800/60 dark:text-stone-400;
+         dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-400;
 }
 
 .section-title {

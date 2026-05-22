@@ -47,8 +47,8 @@ export default function Register() {
         <h1 className="text-3xl font-black">{role === 'runner' ? 'Runner application' : 'Create customer account'}</h1>
         <p className="mt-2 text-muted">{role === 'runner' ? 'Apply to complete local errands around Leicester.' : 'Book trusted local help across Leicester.'}</p>
         <div className="mt-6 grid grid-cols-2 gap-2">
-          <button type="button" onClick={() => setRole('customer')} className={`min-h-11 rounded-lg border px-3 font-bold ${role === 'customer' ? 'border-stone-900 bg-stone-50 text-ink dark:border-stone-400 dark:bg-stone-800' : 'border-surface-hi bg-surface text-ink'}`}>Customer</button>
-          <button type="button" onClick={() => setRole('runner')} className={`min-h-11 rounded-lg border px-3 font-bold ${role === 'runner' ? 'border-stone-900 bg-stone-50 text-ink dark:border-stone-400 dark:bg-stone-800' : 'border-surface-hi bg-surface text-ink'}`}>Runner</button>
+          <button type="button" onClick={() => setRole('customer')} className={`min-h-11 rounded-lg border px-3 font-bold ${role === 'customer' ? 'border-stone-900 bg-stone-50 text-ink dark:border-zinc-400 dark:bg-zinc-900' : 'border-surface-hi bg-surface text-ink'}`}>Customer</button>
+          <button type="button" onClick={() => setRole('runner')} className={`min-h-11 rounded-lg border px-3 font-bold ${role === 'runner' ? 'border-stone-900 bg-stone-50 text-ink dark:border-zinc-400 dark:bg-zinc-900' : 'border-surface-hi bg-surface text-ink'}`}>Runner</button>
         </div>
         <form onSubmit={submit} className="mt-6 grid gap-4">
           <input className="focus-ring min-h-11 rounded-lg border border-slate-200 px-3" placeholder="Full name" value={form.name} onChange={(e) => update('name', e.target.value)} required />

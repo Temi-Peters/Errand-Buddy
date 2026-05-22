@@ -19,7 +19,7 @@ export default function Layout({ children }) {
           <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <Link to="/" className="flex items-center gap-2 font-extrabold text-ink">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-stone-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
                   <PackageCheck size={15} />
                 </span>
                 Errand<span className="font-extrabold">Buddy</span>

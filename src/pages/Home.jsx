@@ -92,7 +92,7 @@ export default function Home() {
           ].map(([title, copy], index) => (
             <Card key={title} className="relative overflow-hidden p-7">
               <span className="absolute right-5 top-4 select-none text-7xl font-bold text-surface-hi">{index + 1}</span>
-              <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-stone-900 text-sm font-bold text-white dark:bg-stone-100 dark:text-stone-900">
+              <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-stone-900 text-sm font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
                 {index + 1}
               </span>
               <h3 className="relative mt-5 text-lg font-bold text-ink">{title}</h3>
@@ -104,7 +104,7 @@ export default function Home() {
 
       {/* CTA duo */}
       <section className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl bg-stone-900 p-8 text-white dark:bg-stone-800">
+        <div className="rounded-2xl bg-stone-900 p-8 text-white dark:bg-zinc-900">
           <p className="text-xs font-semibold uppercase tracking-widest text-stone-400">Transparent pricing</p>
           <h2 className="mt-2 text-3xl font-bold">Errands from £15</h2>
           <p className="mt-3 leading-7 text-stone-400">One-off help or a weekly plan. Clear quotes before you confirm anything.</p>

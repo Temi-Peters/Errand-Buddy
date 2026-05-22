@@ -82,7 +82,7 @@ export default function CustomerDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl bg-stone-900 p-5 text-white shadow-lift sm:p-6 dark:bg-stone-800">
+      <div className="rounded-2xl bg-stone-900 p-5 text-white shadow-lift sm:p-6 dark:bg-zinc-900">
         <p className="text-xs font-semibold uppercase tracking-widest text-stone-400">Customer dashboard</p>
         <h1 className="mt-2 text-2xl font-bold sm:text-3xl">Your errands, clearly organised</h1>
         <p className="mt-2 text-stone-400">Track bookings, message runners, and review completed work.</p>
