@@ -41,7 +41,7 @@ export default function Home() {
             <Link
               key={name}
               to={href}
-              className="group flex flex-col items-center gap-3 rounded-2xl border border-stone-200 bg-white p-5 text-center shadow-soft transition duration-200 hover:-translate-y-0.5 hover:shadow-lift dark:border-zinc-800 dark:bg-surface"
+              className="hover-glow group flex flex-col items-center gap-3 rounded-2xl border border-stone-200 bg-white p-5 text-center shadow-soft dark:border-zinc-800 dark:bg-surface"
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-hi text-muted transition group-hover:bg-stone-900 group-hover:text-white dark:group-hover:bg-zinc-100 dark:group-hover:text-zinc-900">
                 <Icon size={20} />

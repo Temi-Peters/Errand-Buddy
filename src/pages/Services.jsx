@@ -20,7 +20,7 @@ export default function Services() {
       </section>
       <div className="grid gap-5 md:grid-cols-2">
         {services.map(([name, Icon, description, examples, price]) => (
-          <Card key={name} className="p-6 transition hover:-translate-y-1 hover:shadow-lift">
+          <Card key={name} className="hover-glow p-6">
             <div className="flex items-start justify-between gap-4">
               <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-hi text-muted"><Icon size={24} /></span>
               <span className="rounded-full bg-secondary/10 px-3 py-1 text-sm font-bold text-secondary">{price}</span>

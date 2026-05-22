@@ -33,7 +33,7 @@ export default function Navbar() {
         <div className="hidden items-center gap-0.5 md:flex">
           {navLinks.map(([label, path]) => (
             <NavLink key={path} to={path} className={({ isActive }) =>
-              `rounded-lg px-3 py-2 text-sm font-semibold transition duration-150 ${
+              `rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ease-out ${
                 isActive
                   ? 'bg-stone-100 text-ink dark:bg-zinc-800 dark:text-zinc-100'
                   : 'text-muted hover:bg-surface-hi hover:text-ink'
@@ -45,7 +45,7 @@ export default function Navbar() {
         <div className="hidden items-center gap-2 md:flex">
           <button
             onClick={toggleTheme}
-            className="focus-ring flex h-9 w-9 items-center justify-center rounded-lg text-muted transition hover:bg-surface-hi hover:text-ink"
+            className="focus-ring flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-all duration-200 ease-out hover:bg-surface-hi hover:text-ink"
             aria-label="Toggle theme"
           >
             {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}

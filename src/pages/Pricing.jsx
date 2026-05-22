@@ -54,7 +54,7 @@ export default function Pricing() {
         {plans.map(({ name, price, per, copy, highlight }) => (
           <Card
             key={name}
-            className={`flex flex-col p-6 text-center ${highlight ? 'border-stone-900 ring-1 ring-stone-900 dark:border-zinc-400 dark:ring-zinc-400' : ''}`}
+            className={`hover-glow flex flex-col p-6 text-center ${highlight ? 'border-stone-900 ring-1 ring-stone-900 dark:border-zinc-400 dark:ring-zinc-400' : ''}`}
           >
             {highlight && (
               <span className="mb-3 inline-block rounded-full bg-stone-900 px-3 py-0.5 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">

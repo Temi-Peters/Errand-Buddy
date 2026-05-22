@@ -10,7 +10,7 @@ export default function Button({ children, variant = 'primary', className = '', 
 
   return (
     <Component
-      className={`focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition duration-200 disabled:cursor-not-allowed disabled:opacity-60 ${variants[variant]} ${className}`}
+      className={`btn-glow focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${variants[variant]} ${className}`}
       disabled={loading || props.disabled}
       {...props}
     >
