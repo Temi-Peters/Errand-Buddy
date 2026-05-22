@@ -36,7 +36,7 @@ export default function Home() {
 
       {/* Services — icon + name only, no descriptions */}
       <section>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5 sm:gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
           {services.map(({ name, Icon, href }) => (
             <Link
               key={name}
