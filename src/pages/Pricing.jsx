@@ -1,3 +1,4 @@
+import { MessageSquare, MapPin, ShieldCheck, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -38,10 +39,10 @@ const plans = [
 ];
 
 const included = [
-  { emoji: '✅', label: 'Vetted local runner' },
-  { emoji: '💬', label: 'In-app messaging' },
-  { emoji: '📍', label: 'Real-time status updates' },
-  { emoji: '⭐', label: 'Rating after every job' },
+  { Icon: ShieldCheck, label: 'Vetted local runner' },
+  { Icon: MessageSquare, label: 'In-app messaging' },
+  { Icon: MapPin, label: 'Real-time status updates' },
+  { Icon: Star, label: 'Rating after every job' },
 ];
 
 export default function Pricing() {
@@ -90,9 +91,11 @@ export default function Pricing() {
       <div>
         <p className="mb-4 text-center text-sm font-bold uppercase tracking-widest text-muted">Every booking includes</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {included.map(({ emoji, label }) => (
-            <div key={label} className="flex flex-col items-center gap-2 rounded-2xl border border-surface-hi bg-surface p-4 text-center shadow-soft">
-              <span className="text-2xl">{emoji}</span>
+          {included.map(({ Icon, label }) => (
+            <div key={label} className="flex flex-col items-center gap-3 rounded-2xl border border-surface-hi bg-surface p-4 text-center shadow-soft">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
+                <Icon size={18} />
+              </span>
               <p className="text-sm font-semibold text-ink">{label}</p>
             </div>
           ))}
