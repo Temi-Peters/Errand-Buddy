@@ -1,0 +1,269 @@
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { api, ApiRequestError, ApiUnavailableError, getToken, setToken } from '../api/client';
+
+const AppContext = createContext(null);
+
+export const AppProvider = ({ children }) => {
+  const [customers, setCustomers] = useState([]);
+  const [runners, setRunnersState] = useState([]);
+  const [bookings, setBookingsState] = useState([]);
+  const [authUser, setAuthUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(Boolean(getToken()));
+  const [serviceUnavailable, setServiceUnavailable] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [theme, setTheme] = useState(() => localStorage.getItem('eb-theme') || 'dark');
+
+  const toggleTheme = () => {
+    setTheme(prev => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('eb-theme', next);
+      document.documentElement.classList.toggle('dark', next === 'dark');
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+  }, []);
+
+  const showToast = (message, type = 'success') => {
+    setToast({ id: Date.now(), message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const setBookings = (next) => setBookingsState((current) => typeof next === 'function' ? next(current) : next);
+  const setRunners = (next) => setRunnersState((current) => typeof next === 'function' ? next(current) : next);
+
+  const clearSession = () => {
+    setAuthUser(null);
+    setToken(null);
+  };
+
+  const handleApiError = (error) => {
+    if (error instanceof ApiUnavailableError) {
+      setServiceUnavailable(true);
+      showToast('Service temporarily unavailable', 'error');
+      return;
+    }
+
+    if (error instanceof ApiRequestError && error.status === 401) {
+      clearSession();
+    }
+
+    showToast(error.message, 'error');
+  };
+
+  const refreshFromApi = async (user = authUser) => {
+    if (!getToken()) return false;
+
+    try {
+      const [customersResponse, runnersResponse, bookingsResponse] = await Promise.all([
+        api.customers(),
+        api.runners(),
+        api.bookings()
+      ]);
+
+      setCustomers(customersResponse.customers);
+      setRunnersState(runnersResponse.runners);
+      setBookingsState(bookingsResponse.bookings);
+      setServiceUnavailable(false);
+      return true;
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 401) {
+        clearSession();
+      } else if (!(error instanceof ApiUnavailableError)) {
+        handleApiError(error);
+      }
+      if (error instanceof ApiUnavailableError) setServiceUnavailable(true);
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    api.health()
+      .then(() => setServiceUnavailable(false))
+      .catch((error) => {
+        if (error instanceof ApiUnavailableError) setServiceUnavailable(true);
+      });
+
+    const restoreSession = async () => {
+      if (!getToken()) return;
+
+      try {
+        const response = await api.me();
+        setAuthUser(response.user);
+        await refreshFromApi(response.user);
+      } catch (error) {
+        if (error instanceof ApiRequestError && error.status === 401) {
+          clearSession();
+        }
+        if (error instanceof ApiUnavailableError) setServiceUnavailable(true);
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+
+    restoreSession();
+  }, []);
+
+  const login = async (credentials) => {
+    try {
+      const response = await api.login(credentials);
+      setToken(response.token);
+      setAuthUser(response.user);
+      setServiceUnavailable(false);
+      showToast(`Logged in as ${response.user.name}`);
+      await refreshFromApi(response.user);
+      return response.user;
+    } catch (error) {
+      if (error instanceof ApiUnavailableError) {
+        setServiceUnavailable(true);
+        showToast('Service temporarily unavailable', 'error');
+      } else {
+        handleApiError(error);
+      }
+      throw error;
+    }
+  };
+
+  const register = async (payload) => {
+    try {
+      const response = await api.register(payload);
+      setToken(response.token);
+      setAuthUser(response.user);
+      setServiceUnavailable(false);
+      showToast(`Account created for ${response.user.name}`);
+      await refreshFromApi(response.user);
+      return response.user;
+    } catch (error) {
+      if (error instanceof ApiUnavailableError) {
+        setServiceUnavailable(true);
+        showToast('Service temporarily unavailable', 'error');
+      } else {
+        handleApiError(error);
+      }
+      throw error;
+    }
+  };
+
+  const logout = () => {
+    clearSession();
+    showToast('Logged out');
+  };
+
+  const addBooking = async (booking) => {
+    try {
+      const response = await api.createBooking(booking);
+      setBookings((current) => [response.booking, ...current]);
+      return response.booking;
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  };
+
+  const replaceBooking = (nextBooking) => {
+    setBookings((current) => current.map((booking) => booking.id === nextBooking.id ? nextBooking : booking));
+  };
+
+  const updateBooking = async (bookingId, updates) => {
+    try {
+      let response;
+      if (updates.rating) {
+        response = await api.reviewBooking(bookingId, updates.rating);
+      } else if (authUser?.role === 'runner' && updates.status === 'In Progress') {
+        response = await api.startBooking(bookingId);
+      } else {
+        response = await api.updateBooking(bookingId, updates);
+      }
+      replaceBooking(response.booking);
+      return response.booking;
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  };
+
+  const acceptBooking = async (bookingId) => {
+    try {
+      const response = await api.acceptBooking(bookingId);
+      replaceBooking(response.booking);
+      return response.booking;
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  };
+
+  const completeRunnerTask = async (bookingId, runnerId) => {
+    try {
+      const response = await api.completeBooking(bookingId);
+      replaceBooking(response.booking);
+      setRunners((current) => current.map((runner) => runner.id === runnerId ? { ...runner, completedTasks: runner.completedTasks + 1 } : runner));
+      return response.booking;
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  };
+
+  const fetchMessages = async (bookingId) => {
+    try {
+      const response = await api.messages(bookingId);
+      return response.messages;
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  };
+
+  const sendMessage = async (bookingId, body) => {
+    try {
+      const response = await api.sendMessage(bookingId, { body });
+      showToast('Message sent');
+      return response.message;
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  };
+
+  const updateRunnerStatus = async (runnerId, status, rejectionReason = '') => {
+    try {
+      const response = await api.updateRunner(runnerId, { status, rejectionReason });
+      setRunners((current) => current.map((runner) => runner.id === runnerId ? response.runner : runner));
+      showToast('Runner updated');
+      return response.runner;
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  };
+
+  const value = useMemo(() => ({
+    customers,
+    runners,
+    bookings,
+    authUser,
+    authLoading,
+    serviceUnavailable,
+    toast,
+    theme,
+    showToast,
+    toggleTheme,
+    login,
+    register,
+    logout,
+    addBooking,
+    updateBooking,
+    acceptBooking,
+    completeRunnerTask,
+    fetchMessages,
+    sendMessage,
+    updateRunnerStatus
+  }), [customers, runners, bookings, authUser, authLoading, serviceUnavailable, toast, theme]);
+
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+};
+
+export const useApp = () => useContext(AppContext);

@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Theme tokens (RGB triplets so Tailwind opacity modifiers work) ── */
+:root {
+  --color-ink:        12 10 20;       /* #0C0A14 */
+  --color-muted:      113 113 122;    /* #71717A */
+  --color-surface:    255 255 255;    /* #FFFFFF */
+  --color-surface-hi: 244 240 255;    /* #F4F0FF */
+  --color-page:       250 248 255;    /* #FAF8FF */
+}
+
+.dark {
+  --color-ink:        237 233 250;    /* #EDE9FA */
+  --color-muted:      161 161 181;    /* #A1A1B5 */
+  --color-surface:    19 16 31;       /* #13101F */
+  --color-surface-hi: 28 24 48;       /* #1C1830 */
+  --color-page:       12 10 20;       /* #0C0A14 */
+}
+
+/* ── Base ────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background-color: rgb(var(--color-page));
+  color: rgb(var(--color-ink));
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Ambient glow — light mode */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 70% 50% at 15% 0%, rgba(124,58,237,0.06), transparent),
+    radial-gradient(ellipse 50% 40% at 85% 10%, rgba(124,58,237,0.04), transparent);
+}
+
+/* Ambient glow — dark mode */
+.dark body::before {
+  background:
+    radial-gradient(ellipse 70% 50% at 15% 0%, rgba(124,58,237,0.20), transparent),
+    radial-gradient(ellipse 50% 40% at 85% 10%, rgba(124,58,237,0.10), transparent);
+}
+
+/* Form fields: always white bg + dark text for readability */
+button, input, select, textarea { font: inherit; }
+
+input:not([type="checkbox"]):not([type="radio"]),
+textarea,
+select {
+  background-color: #ffffff;
+  color: #0c0a14;
+  border-color: #e2e8f0;
+}
+
+/* ── Utilities ───────────────────────────────────────────────────── */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary/60 focus:ring-offset-2;
+}
+
+.dark .focus-ring, .focus-ring:focus {
+  --tw-ring-offset-color: rgb(var(--color-surface));
+}
+
+.page-kicker {
+  @apply inline-flex rounded-full border border-violet-200 bg-violet-50 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-primary
+         dark:border-violet-700/30 dark:bg-violet-900/20 dark:text-violet-300;
+}
+
+.section-title {
+  @apply text-2xl font-extrabold tracking-tight text-ink sm:text-3xl;
+}
+
+@keyframes float-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-enter { animation: float-up 0.45s ease both; }

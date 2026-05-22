@@ -1,0 +1,7 @@
+node_modules
+dist
+.npm-cache
+.env
+server/.env
+server/.npm-cache
+.DS_Store

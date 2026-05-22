@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  RUNNER
+  ADMIN
+}
+
+enum RunnerStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+  SUSPENDED
+}
+
+enum BookingStatus {
+  PENDING_PAYMENT
+  PENDING
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum BookingType {
+  ONE_OFF_TASK
+  WEEKLY_SUBSCRIPTION
+}
+
+enum ServiceType {
+  DOG_WALKING
+  GROCERY_SHOPPING
+  PRESCRIPTION_PICKUP
+  DRY_CLEANING
+  GENERAL_ERRANDS
+}
+
+enum PaymentStatus {
+  REQUIRES_PAYMENT_METHOD
+  REQUIRES_CONFIRMATION
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id              String           @id @default(cuid())
+  name            String
+  email           String           @unique
+  passwordHash    String
+  role            UserRole
+  customerProfile CustomerProfile?
+  runnerProfile   RunnerProfile?
+  sentMessages    Message[]        @relation("SentMessages")
+  receivedMessages Message[]       @relation("ReceivedMessages")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model CustomerProfile {
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  address      String
+  phone        String
+  postcodeArea String
+  bookings     Booking[]
+  reviews      Review[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model RunnerProfile {
+  id              String       @id @default(cuid())
+  userId          String       @unique
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone           String       @default("")
+  area            String
+  bio             String       @default("")
+  transportMethod String       @default("")
+  availabilityNotes String    @default("")
+  rating          Decimal      @default(0) @db.Decimal(2, 1)
+  completedTasks  Int          @default(0)
+  status          RunnerStatus @default(PENDING)
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  rejectionReason String?
+  suspendedAt     DateTime?
+  stripeAccountId String?
+  bookings        Booking[]
+  reviews         Review[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model Booking {
+  id               String           @id @default(cuid())
+  customerId       String
+  customer         CustomerProfile  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  runnerId         String?
+  runner           RunnerProfile?   @relation(fields: [runnerId], references: [id], onDelete: SetNull)
+  serviceType      ServiceType
+  bookingType      BookingType
+  subscriptionPlan String?
+  date             DateTime
+  time             String
+  price            Decimal          @db.Decimal(10, 2)
+  status           BookingStatus    @default(PENDING)
+  instructions     String
+  address          String
+  contactPhone     String
+  postcodeArea     String
+  review           Review?
+  payment          Payment?
+  messages         Message[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([customerId])
+  @@index([runnerId])
+  @@index([status])
+}
+
+model Review {
+  id         String          @id @default(cuid())
+  bookingId  String          @unique
+  booking    Booking         @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  customerId String
+  customer   CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  runnerId   String
+  runner     RunnerProfile   @relation(fields: [runnerId], references: [id], onDelete: Cascade)
+  stars      Int
+  review     String
+  createdAt  DateTime        @default(now())
+
+  @@index([customerId])
+  @@index([runnerId])
+}
+
+model Payment {
+  id                    String        @id @default(cuid())
+  bookingId             String        @unique
+  booking               Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  amount                Decimal       @db.Decimal(10, 2)
+  currency              String        @default("gbp")
+  status                PaymentStatus @default(REQUIRES_CONFIRMATION)
+  stripePaymentIntentId String?
+  stripeTransferId      String?
+  platformFeeAmount     Decimal       @db.Decimal(10, 2)
+  runnerPayoutAmount    Decimal       @db.Decimal(10, 2)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  bookingId  String
+  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  senderId   String
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  body       String
+  createdAt  DateTime @default(now())
+
+  @@index([bookingId])
+  @@index([senderId])
+  @@index([receiverId])
+}
