@@ -1,5 +1,5 @@
 import {
-  Bar, BarChart, Cell, Legend, Pie, PieChart,
+  Bar, BarChart, Cell, Pie, PieChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis
 } from 'recharts';
 
@@ -114,12 +114,20 @@ export function MultiBarChart({ data, bars, xKey, title, prefix = '' }) {
           <YAxis tick={{ fontSize: 11, fill: '#78716C' }} axisLine={false} tickLine={false}
             tickFormatter={(v) => `${prefix}${v}`} width={44} />
           <Tooltip {...tooltipStyle} formatter={(v) => [`${prefix}${Number(v) % 1 === 0 ? v : Number(v).toFixed(2)}`]} />
-          <Legend wrapperStyle={{ fontSize: 12, color: '#78716C', paddingTop: 8 }} />
           {bars.map(({ key, label, color }) => (
             <Bar key={key} dataKey={key} name={label} fill={color} radius={[4, 4, 0, 0]} maxBarSize={36} />
           ))}
         </BarChart>
       </ResponsiveContainer>
+      {/* Custom legend — guaranteed left-to-right order matching the bars */}
+      <div className="mt-3 flex justify-center gap-5">
+        {bars.map(({ label, color }) => (
+          <div key={label} className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 flex-shrink-0 rounded-sm" style={{ background: color }} />
+            <span className="text-xs font-medium text-muted">{label}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
