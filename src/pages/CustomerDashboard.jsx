@@ -82,15 +82,15 @@ export default function CustomerDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-[1.5rem] bg-gradient-to-r from-violet-700 to-primary p-6 text-white shadow-lift">
+      <div className="rounded-2xl bg-gradient-to-r from-violet-700 to-primary p-5 text-white shadow-lift sm:rounded-[1.5rem] sm:p-6">
         <p className="text-sm font-black uppercase tracking-wide text-blue-100">Customer dashboard</p>
-        <h1 className="mt-2 text-3xl font-black">Your errands, clearly organised</h1>
+        <h1 className="mt-2 text-2xl font-black sm:text-3xl">Your errands, clearly organised</h1>
         <p className="mt-2 text-blue-50">Track bookings, message runners, and review completed work.</p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <Card><div className="flex items-center justify-between"><div><p className="text-sm font-bold text-muted">Active bookings</p><p className="text-3xl font-black text-ink">{activeCount}</p></div><Clock className="text-primary" /></div></Card>
         <Card><div className="flex items-center justify-between"><div><p className="text-sm font-bold text-muted">Completed</p><p className="text-3xl font-black text-ink">{completedCount}</p></div><CalendarCheck className="text-secondary" /></div></Card>
-        <Card><div className="flex items-center justify-between"><div><p className="text-sm font-bold text-muted">Booked value</p><p className="text-3xl font-black text-ink">£{totalSpend.toFixed(0)}</p></div><WalletCards className="text-primary" /></div></Card>
+        <Card className="col-span-2 sm:col-span-1"><div className="flex items-center justify-between"><div><p className="text-sm font-bold text-muted">Booked value</p><p className="text-3xl font-black text-ink">£{totalSpend.toFixed(0)}</p></div><WalletCards className="text-primary" /></div></Card>
       </div>
       {subscription && <Card className="border-secondary/40"><h2 className="font-bold text-ink">Active subscription</h2><p className="text-muted">{subscription.bookingType} for {subscription.serviceType}, £{subscription.price}/week</p></Card>}
       {Object.entries(grouped).map(([status, items]) => (

@@ -20,10 +20,10 @@ const stats = [
 
 export default function Home() {
   return (
-    <div className="space-y-20">
+    <div className="space-y-12 sm:space-y-20">
 
       {/* Hero — always dark/premium */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-700 via-primary to-violet-900 px-6 py-16 text-white shadow-lift sm:px-12 sm:py-20 lg:py-24">
+      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-700 via-primary to-violet-900 px-5 py-12 text-white shadow-lift sm:rounded-3xl sm:px-12 sm:py-20 lg:py-24">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(196,181,253,0.20),transparent)]" />
         <div
           className="absolute right-0 top-0 h-full w-1/2 opacity-[0.06]"
@@ -33,7 +33,7 @@ export default function Home() {
           <span className="inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-white/90 backdrop-blur">
             Leicester Local Errand Marketplace
           </span>
-          <h1 className="mt-6 text-5xl font-extrabold leading-tight tracking-tight sm:text-6xl lg:text-7xl">
+          <h1 className="mt-6 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
             Busy? Let Errand<br />
             <span className="text-white/80">Buddy</span> Handle It
           </h1>
