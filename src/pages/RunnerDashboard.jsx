@@ -91,7 +91,33 @@ export default function RunnerDashboard() {
       {activeTab === 'Available Tasks' && <div className="grid gap-4">{available.length ? available.map((booking, index) => <BookingCard key={booking.id} booking={booking} actions={<><p className="font-bold text-secondary">Runner payout: £{payout(booking.price)}</p><p className="text-sm text-muted">{(0.7 + index * 0.4).toFixed(1)} miles away</p><Button onClick={() => accept(booking)}>Accept Task</Button></>} />) : <Card className="border-dashed text-center"><p className="font-bold text-muted">No open tasks in your area</p><p className="mt-1 text-sm text-muted">Check back later for new local errands.</p></Card>}</div>}
       {activeTab === 'My Tasks' && <div className="space-y-6">{Object.entries(groupedTasks).map(([status, items]) => <section key={status}><h2 className="mb-3 text-xl font-bold">{status}</h2><div className="grid gap-4">{items.length ? items.map(renderTask) : <Card><p className="text-muted">No {status.toLowerCase()} tasks.</p></Card>}</div></section>)}</div>}
       {activeTab === 'Earnings' && <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><Card><p className="text-muted">This week</p><p className="text-3xl font-black">£{earnings.toFixed(2)}</p></Card><Card><p className="text-muted">This month</p><p className="text-3xl font-black">£{earnings.toFixed(2)}</p></Card><Card><p className="text-muted">Completed tasks</p><p className="text-3xl font-black">{completed.length}</p></Card><Card><p className="text-muted">Average rating</p><p className="text-3xl font-black">{ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : runner.rating}</p></Card></div>}
-      {activeTab === 'Messages' && <Card className="text-center"><MessageSquare className="mx-auto text-primary" /><h2 className="mt-3 text-xl font-bold">Messages</h2><p className="mt-2 text-muted">Open an in-progress task to message the customer.</p></Card>}
+      {activeTab === 'Messages' && (
+        <div className="space-y-4">
+          {myTasks.filter((booking) => ['Assigned', 'In Progress'].includes(booking.status)).length ? (
+            myTasks.filter((booking) => ['Assigned', 'In Progress'].includes(booking.status)).map((booking) => {
+              const customer = customers.find((item) => item.id === booking.customerId);
+              return (
+                <Card key={booking.id} className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="font-bold text-ink">{booking.serviceType}</p>
+                    <p className="text-sm text-muted">{customer?.name || 'Customer'} · {booking.status}</p>
+                    <p className="text-sm text-muted">{booking.date} at {booking.time}</p>
+                  </div>
+                  <Button variant="outline" onClick={() => { setContact({ booking, customer }); }} className="flex-shrink-0">
+                    <MessageSquare size={16} /> Message
+                  </Button>
+                </Card>
+              );
+            })
+          ) : (
+            <Card className="border-dashed text-center">
+              <MessageSquare className="mx-auto text-muted" size={32} />
+              <p className="mt-3 font-bold text-muted">No active conversations</p>
+              <p className="mt-1 text-sm text-muted">Conversations appear here once you have an assigned or in-progress task.</p>
+            </Card>
+          )}
+        </div>
+      )}
       {activeTab === 'Profile' && <Card><h2 className="text-xl font-bold">Runner profile</h2><div className="mt-4 grid gap-2 text-muted"><p><strong>Area:</strong> {runner.area}</p><p><strong>Bio:</strong> {runner.bio || 'Not provided'}</p><p><strong>Transport:</strong> {runner.transportMethod || 'Not provided'}</p><p><strong>Availability:</strong> {runner.availabilityNotes || 'Not provided'}</p><p><strong>Rating:</strong> {runner.rating}</p><p><strong>Completed tasks:</strong> {runner.completedTasks}</p></div></Card>}
       {contact && <Modal title={`${contact.booking.serviceType} · ${contact.customer.name}`} onClose={() => { setContact(null); setMessages([]); setMessageBody(''); }}><div className="space-y-3"><div className="max-h-64 space-y-2 overflow-y-auto rounded-lg bg-surface-hi p-3 text-sm">{messages.length ? messages.map((message) => {
         const fromMe = message.senderId === authUser.userId;
