@@ -69,7 +69,13 @@ export default function Admin() {
   return (
     <div className="space-y-6">
       <div className="rounded-2xl bg-stone-900 p-5 text-white shadow-lift sm:p-6 dark:bg-zinc-900"><p className="text-xs font-semibold uppercase tracking-widest text-stone-400">Operations</p><h1 className="mt-2 text-2xl font-bold sm:text-3xl">Admin panel</h1><p className="mt-1 text-stone-400">Marketplace overview, runner approvals and booking operations.</p></div>
-      <div className="flex gap-2 overflow-x-auto rounded-xl bg-surface-hi p-2">{tabs.map((tab) => <button key={tab} onClick={() => setActiveTab(tab)} className={`min-h-11 whitespace-nowrap rounded-lg px-4 font-semibold transition duration-150 ${activeTab === tab ? 'bg-stone-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'text-muted hover:bg-surface hover:text-ink'}`}>{tab}</button>)}</div>
+      <div className="flex justify-center">
+        <div className="flex gap-2 overflow-x-auto rounded-xl bg-surface-hi p-2">
+          {tabs.map((tab) => (
+            <button key={tab} onClick={() => setActiveTab(tab)} className={`min-h-11 whitespace-nowrap rounded-lg px-4 font-semibold transition duration-150 ${activeTab === tab ? 'bg-stone-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'text-muted hover:bg-surface hover:text-ink'}`}>{tab}</button>
+          ))}
+        </div>
+      </div>
 
       {activeTab === 'Overview' && (
         <div className="space-y-4">
