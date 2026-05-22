@@ -246,6 +246,31 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const updateProfile = async (data) => {
+    try {
+      const response = await api.updateProfile(authUser.role, authUser.id, data);
+      const updated = response.customer || response.runner;
+      // Refresh name/email on authUser if they changed
+      if (data.name || data.email) {
+        setAuthUser((prev) => ({
+          ...prev,
+          ...(data.name ? { name: data.name } : {}),
+          ...(data.email ? { email: data.email } : {})
+        }));
+      }
+      if (authUser.role === 'customer') {
+        setCustomers((prev) => prev.map((c) => c.id === authUser.id ? updated : c));
+      } else {
+        setRunners((prev) => prev.map((r) => r.id === authUser.id ? updated : r));
+      }
+      showToast('Profile updated');
+      return updated;
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  };
+
   const value = useMemo(() => ({
     customers,
     runners,
@@ -266,7 +291,8 @@ export const AppProvider = ({ children }) => {
     completeRunnerTask,
     fetchMessages,
     sendMessage,
-    updateRunnerStatus
+    updateRunnerStatus,
+    updateProfile
   }), [customers, runners, bookings, authUser, authLoading, serviceUnavailable, toast, theme]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

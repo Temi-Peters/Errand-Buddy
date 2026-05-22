@@ -1,4 +1,4 @@
-import { CheckCircle2, ClipboardList, MessageSquare, Star, WalletCards } from 'lucide-react';
+import { CheckCircle2, ClipboardList, MessageSquare, Pencil, Star, WalletCards } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import BookingCard from '../components/BookingCard';
 import Button from '../components/Button';
@@ -6,17 +6,21 @@ import Card from '../components/Card';
 import { BarChartHorizontal, BarChartVertical } from '../components/Charts';
 import Modal from '../components/Modal';
 import { useApp } from '../context/AppContext';
+import { areas } from '../data/options';
 
 const tabs = ['Available Tasks', 'My Tasks', 'Earnings', 'Messages', 'Profile'];
 const payout = (price) => Math.round(price * 0.9 * 100) / 100;
 
 export default function RunnerDashboard() {
-  const { authUser, runners, customers, bookings, updateBooking, acceptBooking, completeRunnerTask, fetchMessages, sendMessage, showToast } = useApp();
+  const { authUser, runners, customers, bookings, updateBooking, acceptBooking, completeRunnerTask, fetchMessages, sendMessage, updateProfile, showToast } = useApp();
   const [activeTab, setActiveTab] = useState(tabs[0]);
   const [contact, setContact] = useState(null);
   const [messages, setMessages] = useState([]);
   const [messageBody, setMessageBody] = useState('');
   const [messageLoading, setMessageLoading] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState(null);
+  const [profileSaving, setProfileSaving] = useState(false);
   const runner = runners.find((item) => item.id === authUser.id);
 
   useEffect(() => {
@@ -171,7 +175,86 @@ export default function RunnerDashboard() {
           )}
         </div>
       )}
-      {activeTab === 'Profile' && <Card><h2 className="text-xl font-bold">Runner profile</h2><div className="mt-4 grid gap-2 text-muted"><p><strong>Area:</strong> {runner.area}</p><p><strong>Bio:</strong> {runner.bio || 'Not provided'}</p><p><strong>Transport:</strong> {runner.transportMethod || 'Not provided'}</p><p><strong>Availability:</strong> {runner.availabilityNotes || 'Not provided'}</p><p><strong>Rating:</strong> {runner.rating}</p><p><strong>Completed tasks:</strong> {runner.completedTasks}</p></div></Card>}
+      {activeTab === 'Profile' && (
+        <div className="space-y-4">
+          <Card>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-ink">Your details</h2>
+              {!editingProfile && (
+                <Button variant="ghost" className="text-sm" onClick={() => {
+                  setProfileForm({ name: authUser.name, email: authUser.email, phone: runner.phone || '', area: runner.area || '', bio: runner.bio || '', transportMethod: runner.transportMethod || '', availabilityNotes: runner.availabilityNotes || '' });
+                  setEditingProfile(true);
+                }}>
+                  <Pencil size={14} /> Edit
+                </Button>
+              )}
+            </div>
+
+            {editingProfile && profileForm ? (
+              <form className="mt-4 space-y-3" onSubmit={async (e) => {
+                e.preventDefault();
+                setProfileSaving(true);
+                try { await updateProfile(profileForm); setEditingProfile(false); }
+                finally { setProfileSaving(false); }
+              }}>
+                {[
+                  { label: 'Name', field: 'name', type: 'text' },
+                  { label: 'Email', field: 'email', type: 'email' },
+                  { label: 'Phone', field: 'phone', type: 'tel' },
+                ].map(({ label, field, type }) => (
+                  <div key={field}>
+                    <label className="mb-1 block text-xs font-bold text-muted">{label}</label>
+                    <input type={type} className="focus-ring min-h-11 w-full rounded-lg border border-surface-hi px-3 text-sm" value={profileForm[field]} onChange={(e) => setProfileForm((f) => ({ ...f, [field]: e.target.value }))} />
+                  </div>
+                ))}
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-muted">Area you cover</label>
+                  <select className="focus-ring min-h-11 w-full rounded-lg border border-surface-hi px-3 text-sm" value={profileForm.area} onChange={(e) => setProfileForm((f) => ({ ...f, area: e.target.value }))}>
+                    {areas.map((a) => <option key={a}>{a}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-muted">Transport method</label>
+                  <input type="text" className="focus-ring min-h-11 w-full rounded-lg border border-surface-hi px-3 text-sm" value={profileForm.transportMethod} onChange={(e) => setProfileForm((f) => ({ ...f, transportMethod: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-muted">Bio</label>
+                  <textarea className="focus-ring min-h-20 w-full rounded-lg border border-surface-hi p-3 text-sm" value={profileForm.bio} onChange={(e) => setProfileForm((f) => ({ ...f, bio: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-muted">Availability notes</label>
+                  <textarea className="focus-ring min-h-20 w-full rounded-lg border border-surface-hi p-3 text-sm" value={profileForm.availabilityNotes} onChange={(e) => setProfileForm((f) => ({ ...f, availabilityNotes: e.target.value }))} />
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button type="submit" loading={profileSaving} className="flex-1">Save changes</Button>
+                  <Button type="button" variant="outline" className="flex-1" onClick={() => setEditingProfile(false)}>Cancel</Button>
+                </div>
+              </form>
+            ) : (
+              <div className="mt-4 space-y-3 text-sm">
+                {[['Name', authUser.name], ['Email', authUser.email], ['Phone', runner.phone], ['Area', runner.area], ['Transport', runner.transportMethod], ['Bio', runner.bio], ['Availability', runner.availabilityNotes]].map(([label, value]) => (
+                  <div key={label} className="flex justify-between border-b border-surface-hi pb-3 last:border-0">
+                    <span className="text-muted">{label}</span>
+                    <span className="max-w-[60%] text-right font-semibold text-ink">{value || '—'}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          <Card>
+            <h2 className="text-lg font-bold text-ink">Performance</h2>
+            <div className="mt-4 space-y-3 text-sm">
+              {[['Rating', runner.rating], ['Completed tasks', runner.completedTasks], ['Status', runner.status]].map(([label, value]) => (
+                <div key={label} className="flex justify-between border-b border-surface-hi pb-3 last:border-0">
+                  <span className="text-muted">{label}</span>
+                  <span className="font-semibold text-ink">{value}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
       {contact && <Modal title={`${contact.booking.serviceType} · ${contact.customer.name}`} onClose={() => { setContact(null); setMessages([]); setMessageBody(''); }}><div className="space-y-3"><div className="max-h-64 space-y-2 overflow-y-auto rounded-lg bg-surface-hi p-3 text-sm">{messages.length ? messages.map((message) => {
         const fromMe = message.senderId === authUser.userId;
         return <div key={message.id} className={`rounded-lg p-3 ${fromMe ? 'ml-8 bg-primary text-white' : 'mr-8 bg-surface text-ink'}`}><p className="font-bold">{fromMe ? 'You' : message.senderName}</p><p>{message.body}</p></div>;

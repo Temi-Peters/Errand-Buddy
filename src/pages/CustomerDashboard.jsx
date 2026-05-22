@@ -1,4 +1,4 @@
-import { CalendarCheck, Clock, MessageSquare, Plus, Star, WalletCards } from 'lucide-react';
+import { CalendarCheck, Clock, MessageSquare, Pencil, Plus, Star, WalletCards } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import BookingCard from '../components/BookingCard';
@@ -8,11 +8,12 @@ import { BarChartHorizontal, DonutChart } from '../components/Charts';
 import Modal from '../components/Modal';
 import StatusBadge from '../components/StatusBadge';
 import { useApp } from '../context/AppContext';
+import { areas } from '../data/options';
 
 const tabs = ['Overview', 'My Bookings', 'Messages', 'Account'];
 
 export default function CustomerDashboard() {
-  const { authUser, bookings, runners, customers, updateBooking, fetchMessages, sendMessage, showToast } = useApp();
+  const { authUser, bookings, runners, customers, updateBooking, fetchMessages, sendMessage, updateProfile, showToast } = useApp();
   const [activeTab, setActiveTab] = useState('Overview');
   const [ratingBooking, setRatingBooking] = useState(null);
   const [contact, setContact] = useState(null);
@@ -21,6 +22,9 @@ export default function CustomerDashboard() {
   const [messageLoading, setMessageLoading] = useState(false);
   const [stars, setStars] = useState(5);
   const [review, setReview] = useState('');
+  const [editing, setEditing] = useState(false);
+  const [profileForm, setProfileForm] = useState(null);
+  const [profileSaving, setProfileSaving] = useState(false);
 
   const mine = bookings.filter((b) => b.customerId === authUser.id);
   const grouped = {
@@ -239,37 +243,73 @@ export default function CustomerDashboard() {
       {activeTab === 'Account' && (
         <div className="space-y-4">
           <Card>
-            <h2 className="text-lg font-bold text-ink">Personal details</h2>
-            <div className="mt-4 space-y-3 text-sm">
-              <div className="flex justify-between border-b border-surface-hi pb-3">
-                <span className="text-muted">Name</span><span className="font-semibold text-ink">{authUser.name}</span>
-              </div>
-              <div className="flex justify-between border-b border-surface-hi pb-3">
-                <span className="text-muted">Email</span><span className="font-semibold text-ink">{authUser.email}</span>
-              </div>
-              <div className="flex justify-between border-b border-surface-hi pb-3">
-                <span className="text-muted">Phone</span><span className="font-semibold text-ink">{customer?.phone || '—'}</span>
-              </div>
-              <div className="flex justify-between border-b border-surface-hi pb-3">
-                <span className="text-muted">Address</span><span className="font-semibold text-ink">{customer?.address || '—'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted">Area</span><span className="font-semibold text-ink">{customer?.postcodeArea || '—'}</span>
-              </div>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-ink">Personal details</h2>
+              {!editing && (
+                <Button variant="ghost" className="text-sm" onClick={() => {
+                  setProfileForm({ name: authUser.name, email: authUser.email, phone: customer?.phone || '', address: customer?.address || '', postcodeArea: customer?.postcodeArea || 'Oadby' });
+                  setEditing(true);
+                }}>
+                  <Pencil size={14} /> Edit
+                </Button>
+              )}
             </div>
+
+            {editing && profileForm ? (
+              <form className="mt-4 space-y-3" onSubmit={async (e) => {
+                e.preventDefault();
+                setProfileSaving(true);
+                try { await updateProfile(profileForm); setEditing(false); }
+                finally { setProfileSaving(false); }
+              }}>
+                {[
+                  { label: 'Name', field: 'name', type: 'text' },
+                  { label: 'Email', field: 'email', type: 'email' },
+                  { label: 'Phone', field: 'phone', type: 'tel' },
+                  { label: 'Address', field: 'address', type: 'text' },
+                ].map(({ label, field, type }) => (
+                  <div key={field}>
+                    <label className="mb-1 block text-xs font-bold text-muted">{label}</label>
+                    <input
+                      type={type}
+                      className="focus-ring min-h-11 w-full rounded-lg border border-surface-hi px-3 text-sm"
+                      value={profileForm[field]}
+                      onChange={(e) => setProfileForm((f) => ({ ...f, [field]: e.target.value }))}
+                    />
+                  </div>
+                ))}
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-muted">Area</label>
+                  <select className="focus-ring min-h-11 w-full rounded-lg border border-surface-hi px-3 text-sm" value={profileForm.postcodeArea} onChange={(e) => setProfileForm((f) => ({ ...f, postcodeArea: e.target.value }))}>
+                    {areas.map((a) => <option key={a}>{a}</option>)}
+                  </select>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button type="submit" loading={profileSaving} className="flex-1">Save changes</Button>
+                  <Button type="button" variant="outline" className="flex-1" onClick={() => setEditing(false)}>Cancel</Button>
+                </div>
+              </form>
+            ) : (
+              <div className="mt-4 space-y-3 text-sm">
+                {[['Name', authUser.name], ['Email', authUser.email], ['Phone', customer?.phone], ['Address', customer?.address], ['Area', customer?.postcodeArea]].map(([label, value]) => (
+                  <div key={label} className="flex justify-between border-b border-surface-hi pb-3 last:border-0">
+                    <span className="text-muted">{label}</span>
+                    <span className="font-semibold text-ink">{value || '—'}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </Card>
+
           <Card>
-            <h2 className="text-lg font-bold text-ink">Summary</h2>
+            <h2 className="text-lg font-bold text-ink">Activity summary</h2>
             <div className="mt-4 space-y-3 text-sm">
-              <div className="flex justify-between border-b border-surface-hi pb-3">
-                <span className="text-muted">Total bookings</span><span className="font-semibold text-ink">{mine.length}</span>
-              </div>
-              <div className="flex justify-between border-b border-surface-hi pb-3">
-                <span className="text-muted">Completed</span><span className="font-semibold text-ink">{completedCount}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted">Total spent</span><span className="font-semibold text-ink">£{totalSpend.toFixed(2)}</span>
-              </div>
+              {[['Total bookings', mine.length], ['Completed', completedCount], ['Total spent', `£${totalSpend.toFixed(2)}`]].map(([label, value]) => (
+                <div key={label} className="flex justify-between border-b border-surface-hi pb-3 last:border-0">
+                  <span className="text-muted">{label}</span>
+                  <span className="font-semibold text-ink">{value}</span>
+                </div>
+              ))}
             </div>
           </Card>
         </div>

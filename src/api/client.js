@@ -69,7 +69,8 @@ export const api = {
   messages: (id) => request(`/bookings/${id}/messages`),
   sendMessage: (id, data) => request(`/bookings/${id}/messages`, { method: 'POST', body: data }),
   runners: () => request('/runners'),
-  updateRunner: (id, data) => request(`/runners/${id}`, { method: 'PATCH', body: data }),
+  updateRunner: (id, data) => request(`/runners/${id}/status`, { method: 'PATCH', body: data }),
+  updateProfile: (role, id, data) => request(`/${role === 'runner' ? 'runners' : 'customers'}/${id}`, { method: 'PATCH', body: data }),
   customers: () => request('/customers'),
   adminOverview: () => request('/admin/overview'),
   mockPaymentIntent: (data) => request('/payments/mock-intent', { method: 'POST', body: data })
