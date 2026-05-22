@@ -53,7 +53,7 @@ export default function Pricing() {
         <span className="page-kicker">Pricing</span>
         <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-ink">Clear starting prices</h1>
         <p className="mx-auto mt-3 max-w-xl text-lg leading-8 text-muted">
-          Simple pricing for Leicester errands. Final quotes based on task complexity, distance, and time required.
+          Simple pricing for local errands. Final quotes based on task complexity, distance, and time required.
         </p>
       </section>
 
