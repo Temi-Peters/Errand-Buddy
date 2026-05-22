@@ -15,14 +15,11 @@ export default function Home() {
 
       {/* Hero */}
       <section className="pt-10 text-center sm:pt-20">
-        <span className="inline-flex rounded-full border border-stone-200 bg-stone-100 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-stone-500 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-400">
-          Leicester · Local Errands
-        </span>
-        <h1 className="mx-auto mt-6 max-w-2xl text-4xl font-bold tracking-tight text-ink sm:text-6xl">
+        <h1 className="mx-auto max-w-2xl text-4xl font-bold tracking-tight text-ink sm:text-6xl">
           Local help,<br />when you need it.
         </h1>
         <p className="mx-auto mt-5 max-w-md text-base leading-7 text-muted sm:text-lg">
-          Book a trusted local runner for groceries, prescriptions, dog walks, and more — all across Leicester.
+          Book a trusted local runner for groceries, prescriptions, dry cleaning, and more — wherever you are.
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button as={Link} to="/book" className="w-full px-10 py-3 text-base sm:w-auto">
