@@ -8,10 +8,8 @@ export default {
         sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
       },
       colors: {
-        // Fixed brand colours
-        primary:   '#7C3AED',
-        secondary: '#10B981',
-        // Adaptive colours — RGB triplet format so Tailwind opacity modifiers work
+        primary:      '#1C1917',
+        secondary:    '#10B981',
         ink:          'rgb(var(--color-ink) / <alpha-value>)',
         muted:        'rgb(var(--color-muted) / <alpha-value>)',
         surface:      'rgb(var(--color-surface) / <alpha-value>)',
@@ -19,9 +17,9 @@ export default {
         page:         'rgb(var(--color-page) / <alpha-value>)',
       },
       boxShadow: {
-        soft: '0 4px 24px rgba(0,0,0,0.07)',
-        lift: '0 12px 48px rgba(0,0,0,0.14)',
-        glow: '0 0 0 1px rgba(124,58,237,0.15), 0 8px 32px rgba(124,58,237,0.25)',
+        soft: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
+        lift: '0 4px 20px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)',
+        glow: '0 0 0 1px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.06)',
       },
     },
   },

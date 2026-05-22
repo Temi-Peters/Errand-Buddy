@@ -32,8 +32,8 @@ export default function Admin() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl bg-gradient-to-r from-[#1C1830] to-primary p-6 text-white shadow-lift"><p className="text-sm font-black uppercase tracking-wide text-violet-300">Operations</p><h1 className="mt-2 text-3xl font-black">Admin panel</h1><p className="mt-1 text-white/60">Marketplace overview, runner approvals and booking operations.</p></div>
-      <div className="flex gap-2 overflow-x-auto rounded-xl bg-surface-hi p-2">{tabs.map((tab) => <button key={tab} onClick={() => setActiveTab(tab)} className={`min-h-11 whitespace-nowrap rounded-lg px-4 font-bold transition duration-150 ${activeTab === tab ? 'bg-primary text-white shadow-md shadow-violet-600/20' : 'text-muted hover:bg-surface hover:text-ink'}`}>{tab}</button>)}</div>
+      <div className="rounded-2xl bg-stone-900 p-5 text-white shadow-lift sm:p-6 dark:bg-stone-800"><p className="text-xs font-semibold uppercase tracking-widest text-stone-400">Operations</p><h1 className="mt-2 text-2xl font-bold sm:text-3xl">Admin panel</h1><p className="mt-1 text-stone-400">Marketplace overview, runner approvals and booking operations.</p></div>
+      <div className="flex gap-2 overflow-x-auto rounded-xl bg-surface-hi p-2">{tabs.map((tab) => <button key={tab} onClick={() => setActiveTab(tab)} className={`min-h-11 whitespace-nowrap rounded-lg px-4 font-semibold transition duration-150 ${activeTab === tab ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900' : 'text-muted hover:bg-surface hover:text-ink'}`}>{tab}</button>)}</div>
 
       {activeTab === 'Overview' && (
         <div className="space-y-4">
@@ -68,7 +68,7 @@ export default function Admin() {
 
       {activeTab === 'All Bookings' && (
         <Card className="overflow-x-auto">
-          <div className="mb-4 flex flex-wrap gap-2">{statuses.map((status) => <button key={status} onClick={() => setStatusFilter(status)} className={`min-h-11 rounded-lg px-3 font-bold ${statusFilter === status ? 'bg-primary text-white' : 'bg-surface-hi'}`}>{status}</button>)}</div>
+          <div className="mb-4 flex flex-wrap gap-2">{statuses.map((status) => <button key={status} onClick={() => setStatusFilter(status)} className={`min-h-11 rounded-lg px-3 font-bold ${statusFilter === status ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900' : 'bg-surface-hi text-muted hover:text-ink'}`}>{status}</button>)}</div>
           <table className="w-full min-w-[820px] text-left text-sm">
             <thead><tr className="text-muted"><th className="p-2">Booking</th><th>Customer</th><th>Runner</th><th>Price</th><th>Status</th><th>Assign</th></tr></thead>
             <tbody>{filteredBookings.map((booking) => <tr key={booking.id} className="border-t border-surface-hi"><td className="p-2 font-bold">{booking.serviceType}<span className="block font-normal text-muted">{booking.date} {booking.time}</span></td><td>{customerName(booking.customerId)}</td><td>{runnerName(booking.runnerId)}</td><td>£{booking.price}</td><td><StatusBadge status={booking.status} /></td><td>{booking.status === 'Pending' && !booking.runnerId ? <select className="focus-ring min-h-11 rounded-lg border border-slate-200 px-2" defaultValue="" onChange={(e) => e.target.value && assign(booking.id, e.target.value)}><option value="">Choose runner</option>{runners.filter((runner) => runner.status === 'Active').map((runner) => <option key={runner.id} value={runner.id}>{runner.name}</option>)}</select> : '-'}</td></tr>)}</tbody>

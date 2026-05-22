@@ -20,48 +20,38 @@ const stats = [
 
 export default function Home() {
   return (
-    <div className="space-y-12 sm:space-y-20">
+    <div className="space-y-20 sm:space-y-28">
 
-      {/* Hero — always dark/premium */}
-      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-700 via-primary to-violet-900 px-5 py-12 text-white shadow-lift sm:rounded-3xl sm:px-12 sm:py-20 lg:py-24">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(196,181,253,0.20),transparent)]" />
-        <div
-          className="absolute right-0 top-0 h-full w-1/2 opacity-[0.06]"
-          style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '28px 28px' }}
-        />
-        <div className="relative mx-auto max-w-3xl text-center">
-          <span className="inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-white/90 backdrop-blur">
-            Leicester Local Errand Marketplace
-          </span>
-          <h1 className="mt-6 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-            Busy? Let Errand<br />
-            <span className="text-white/80">Buddy</span> Handle It
-          </h1>
-          <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-violet-200">
-            Reliable local runners for everyday errands across Leicester — grocery runs, prescription pickups, dog walks and more.
-          </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button as={Link} to="/book" className="w-full px-8 py-3 text-base sm:w-auto">
-              Book an errand <ArrowRight size={18} />
-            </Button>
-            <Button as={Link} to="/become-a-runner" variant="white" className="w-full px-8 py-3 text-base sm:w-auto">
-              Become a runner
-            </Button>
-          </div>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-6 text-sm font-semibold text-violet-200">
-            <p className="flex items-center gap-2"><ShieldCheck size={16} className="text-white/70" /> Vetted runners only</p>
-            <p className="flex items-center gap-2"><MessageSquare size={16} className="text-white/70" /> In-app messaging</p>
-            <p className="flex items-center gap-2"><Star size={16} className="text-white/70" /> Rated every task</p>
-          </div>
+      {/* Hero — clean type, no box */}
+      <section className="pb-8 pt-8 text-center sm:pb-12 sm:pt-16">
+        <span className="page-kicker">Leicester Local Errand Marketplace</span>
+        <h1 className="mt-6 text-4xl font-bold tracking-tight text-ink sm:text-6xl lg:text-7xl">
+          Everyday errands,<br className="hidden sm:block" /> handled locally.
+        </h1>
+        <p className="mx-auto mt-5 max-w-lg text-base leading-8 text-muted sm:text-lg">
+          Reliable local runners for grocery runs, prescription pickups, dog walks, and more across Leicester.
+        </p>
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Button as={Link} to="/book" className="w-full px-8 py-3 text-base sm:w-auto">
+            Book an errand <ArrowRight size={18} />
+          </Button>
+          <Button as={Link} to="/become-a-runner" variant="outline" className="w-full px-8 py-3 text-base sm:w-auto">
+            Become a runner
+          </Button>
+        </div>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-5 text-sm text-muted">
+          <p className="flex items-center gap-2"><ShieldCheck size={14} /> Vetted runners only</p>
+          <p className="flex items-center gap-2"><MessageSquare size={14} /> In-app messaging</p>
+          <p className="flex items-center gap-2"><Star size={14} /> Rated every task</p>
         </div>
       </section>
 
       {/* Stats */}
-      <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         {stats.map(([value, label]) => (
           <Card key={label} className="py-7 text-center">
-            <p className="text-3xl font-extrabold text-ink">{value}</p>
-            <p className="mt-1 text-xs font-bold uppercase tracking-widest text-muted">{label}</p>
+            <p className="text-3xl font-bold text-ink">{value}</p>
+            <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-muted">{label}</p>
           </Card>
         ))}
       </section>
@@ -77,11 +67,11 @@ export default function Home() {
         </div>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {services.map(({ name, Icon, desc }) => (
-            <Card key={name} className="group cursor-pointer p-5 transition duration-200 hover:-translate-y-1 hover:shadow-lift">
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-hi text-muted">
-                <Icon size={20} />
+            <Card key={name} className="group cursor-pointer p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-lift">
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-hi text-muted">
+                <Icon size={18} />
               </span>
-              <h3 className="mt-4 font-bold text-ink">{name}</h3>
+              <h3 className="mt-4 font-semibold text-ink">{name}</h3>
               <p className="mt-1.5 text-sm leading-6 text-muted">{desc}</p>
             </Card>
           ))}
@@ -101,11 +91,11 @@ export default function Home() {
             ['Track, message, rate', 'Stay updated, message your runner directly, and review when done.'],
           ].map(([title, copy], index) => (
             <Card key={title} className="relative overflow-hidden p-7">
-              <span className="absolute right-5 top-4 select-none text-7xl font-extrabold text-surface-hi">{index + 1}</span>
-              <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-surface-hi text-sm font-extrabold text-ink">
+              <span className="absolute right-5 top-4 select-none text-7xl font-bold text-surface-hi">{index + 1}</span>
+              <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-stone-900 text-sm font-bold text-white dark:bg-stone-100 dark:text-stone-900">
                 {index + 1}
               </span>
-              <h3 className="relative mt-5 text-xl font-extrabold text-ink">{title}</h3>
+              <h3 className="relative mt-5 text-lg font-bold text-ink">{title}</h3>
               <p className="relative mt-2 leading-7 text-muted">{copy}</p>
             </Card>
           ))}
@@ -114,21 +104,20 @@ export default function Home() {
 
       {/* CTA duo */}
       <section className="grid gap-4 lg:grid-cols-2">
-        {/* Always-dark premium card */}
-        <div className="rounded-2xl bg-gradient-to-br from-[#1C1830] to-[#0C0A14] p-8 text-white">
-          <p className="text-xs font-bold uppercase tracking-widest text-white/40">Transparent pricing</p>
-          <h2 className="mt-2 text-3xl font-extrabold">Errands from £15</h2>
-          <p className="mt-3 leading-7 text-white/60">One-off help or a weekly plan. Clear quotes before you confirm anything.</p>
-          <Button as={Link} to="/pricing" className="mt-6 bg-white text-primary hover:bg-violet-50">See pricing</Button>
+        <div className="rounded-2xl bg-stone-900 p-8 text-white dark:bg-stone-800">
+          <p className="text-xs font-semibold uppercase tracking-widest text-stone-400">Transparent pricing</p>
+          <h2 className="mt-2 text-3xl font-bold">Errands from £15</h2>
+          <p className="mt-3 leading-7 text-stone-400">One-off help or a weekly plan. Clear quotes before you confirm anything.</p>
+          <Button as={Link} to="/pricing" variant="white" className="mt-6">See pricing</Button>
         </div>
         <Card className="p-8">
-          <p className="text-xs font-bold uppercase tracking-widest text-muted">Built around trust</p>
-          <h2 className="mt-2 text-3xl font-extrabold text-ink">Safety first</h2>
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted">Built around trust</p>
+          <h2 className="mt-2 text-3xl font-bold text-ink">Safety first</h2>
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             {[['Runner checks', ShieldCheck], ['Local coverage', Users], ['Fair payouts', WalletCards]].map(([label, Icon]) => (
               <div key={label} className="rounded-xl bg-surface-hi p-4">
-                <Icon className="text-muted" size={20} />
-                <p className="mt-3 text-sm font-bold text-ink">{label}</p>
+                <Icon className="text-muted" size={18} />
+                <p className="mt-3 text-sm font-semibold text-ink">{label}</p>
               </div>
             ))}
           </div>

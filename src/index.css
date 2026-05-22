@@ -2,24 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Theme tokens (RGB triplets so Tailwind opacity modifiers work) ── */
+/* ── Theme tokens (RGB triplets) ── */
 :root {
-  --color-ink:        12 10 20;       /* #0C0A14 */
-  --color-muted:      113 113 122;    /* #71717A */
-  --color-surface:    255 255 255;    /* #FFFFFF */
-  --color-surface-hi: 244 240 255;    /* #F4F0FF */
-  --color-page:       250 248 255;    /* #FAF8FF */
+  --color-ink:        28 25 23;       /* #1C1917  stone-900 */
+  --color-muted:      120 113 108;    /* #78716C  stone-500 */
+  --color-surface:    255 255 255;    /* #FFFFFF  white     */
+  --color-surface-hi: 245 245 244;   /* #F5F5F4  stone-100 */
+  --color-page:       250 250 249;    /* #FAFAF9  stone-50  */
 }
 
 .dark {
-  --color-ink:        237 233 250;    /* #EDE9FA */
-  --color-muted:      161 161 181;    /* #A1A1B5 */
-  --color-surface:    19 16 31;       /* #13101F */
-  --color-surface-hi: 28 24 48;       /* #1C1830 */
-  --color-page:       12 10 20;       /* #0C0A14 */
+  --color-ink:        250 250 249;    /* #FAFAF9  stone-50  */
+  --color-muted:      168 162 158;    /* #A8A29E  stone-400 */
+  --color-surface:    28 25 23;       /* #1C1917  stone-900 */
+  --color-surface-hi: 41 37 36;      /* #292524  stone-800 */
+  --color-page:       12 10 9;        /* warm near-black    */
 }
 
-/* ── Base ────────────────────────────────────────────────────────── */
+/* ── Base ─────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
 html { scroll-behavior: smooth; }
@@ -35,39 +35,34 @@ body {
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-/* Ambient glow — light mode */
+/* Very subtle ambient depth */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: -1;
-  background:
-    radial-gradient(ellipse 70% 50% at 15% 0%, rgba(124,58,237,0.06), transparent),
-    radial-gradient(ellipse 50% 40% at 85% 10%, rgba(124,58,237,0.04), transparent);
+  background: radial-gradient(ellipse 100% 60% at 50% -10%, rgba(0,0,0,0.018), transparent);
 }
 
-/* Ambient glow — dark mode */
 .dark body::before {
-  background:
-    radial-gradient(ellipse 70% 50% at 15% 0%, rgba(124,58,237,0.20), transparent),
-    radial-gradient(ellipse 50% 40% at 85% 10%, rgba(124,58,237,0.10), transparent);
+  background: radial-gradient(ellipse 100% 60% at 50% -10%, rgba(255,255,255,0.025), transparent);
 }
 
-/* Form fields: always white bg + dark text for readability */
+/* Form fields: always white bg + dark text */
 button, input, select, textarea { font: inherit; }
 
 input:not([type="checkbox"]):not([type="radio"]),
 textarea,
 select {
   background-color: #ffffff;
-  color: #0c0a14;
-  border-color: #e2e8f0;
+  color: #1c1917;
+  border-color: #e7e5e4;
 }
 
-/* ── Utilities ───────────────────────────────────────────────────── */
+/* ── Utilities ───────────────────────────────────────────── */
 .focus-ring {
-  @apply focus:outline-none focus:ring-2 focus:ring-primary/60 focus:ring-offset-2;
+  @apply focus:outline-none focus:ring-2 focus:ring-ink/20 focus:ring-offset-2;
 }
 
 .dark .focus-ring, .focus-ring:focus {
@@ -75,12 +70,12 @@ select {
 }
 
 .page-kicker {
-  @apply inline-flex rounded-full border border-violet-200 bg-violet-50 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-primary
-         dark:border-violet-700/30 dark:bg-violet-900/20 dark:text-violet-300;
+  @apply inline-flex rounded-full border border-stone-200 bg-stone-100 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-stone-500
+         dark:border-stone-700 dark:bg-stone-800/60 dark:text-stone-400;
 }
 
 .section-title {
-  @apply text-2xl font-extrabold tracking-tight text-ink sm:text-3xl;
+  @apply text-2xl font-bold tracking-tight text-ink sm:text-3xl;
 }
 
 @keyframes float-up {

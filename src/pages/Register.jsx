@@ -47,8 +47,8 @@ export default function Register() {
         <h1 className="text-3xl font-black">{role === 'runner' ? 'Runner application' : 'Create customer account'}</h1>
         <p className="mt-2 text-muted">{role === 'runner' ? 'Apply to complete local errands around Leicester.' : 'Book trusted local help across Leicester.'}</p>
         <div className="mt-6 grid grid-cols-2 gap-2">
-          <button type="button" onClick={() => setRole('customer')} className={`min-h-11 rounded-lg border px-3 font-bold ${role === 'customer' ? 'border-primary bg-violet-50 text-primary dark:bg-violet-900/20' : 'border-surface-hi bg-surface text-ink'}`}>Customer</button>
-          <button type="button" onClick={() => setRole('runner')} className={`min-h-11 rounded-lg border px-3 font-bold ${role === 'runner' ? 'border-primary bg-violet-50 text-primary dark:bg-violet-900/20' : 'border-surface-hi bg-surface text-ink'}`}>Runner</button>
+          <button type="button" onClick={() => setRole('customer')} className={`min-h-11 rounded-lg border px-3 font-bold ${role === 'customer' ? 'border-stone-900 bg-stone-50 text-ink dark:border-stone-400 dark:bg-stone-800' : 'border-surface-hi bg-surface text-ink'}`}>Customer</button>
+          <button type="button" onClick={() => setRole('runner')} className={`min-h-11 rounded-lg border px-3 font-bold ${role === 'runner' ? 'border-stone-900 bg-stone-50 text-ink dark:border-stone-400 dark:bg-stone-800' : 'border-surface-hi bg-surface text-ink'}`}>Runner</button>
         </div>
         <form onSubmit={submit} className="mt-6 grid gap-4">
           <input className="focus-ring min-h-11 rounded-lg border border-slate-200 px-3" placeholder="Full name" value={form.name} onChange={(e) => update('name', e.target.value)} required />
@@ -71,7 +71,7 @@ export default function Register() {
           )}
           <Button className="w-full" type="submit" loading={loading}>{role === 'runner' ? 'Submit application' : 'Create account'}</Button>
         </form>
-        <p className="mt-5 text-sm text-muted">Already registered? <Link className="font-bold text-primary" to="/login">Log in</Link>.</p>
+        <p className="mt-5 text-sm text-muted">Already registered? <Link className="font-semibold text-ink underline" to="/login">Log in</Link>.</p>
       </Card>
     </div>
   );

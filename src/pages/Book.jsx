@@ -112,10 +112,10 @@ export default function Book() {
       {step === 2 && (
         <Card className="space-y-4">
           <h2 className="text-xl font-bold">Choose booking type</h2>
-          <button className={`w-full rounded-lg border p-4 text-left ${form.bookingType === 'One-off task' ? 'border-primary bg-violet-50 dark:bg-violet-900/20' : 'border-surface-hi'}`} onClick={() => setForm((current) => ({ ...current, bookingType: 'One-off task', price: 18 }))}>
+          <button className={`w-full rounded-lg border p-4 text-left ${form.bookingType === 'One-off task' ? 'border-stone-900 bg-stone-50 dark:border-stone-400 dark:bg-stone-800' : 'border-surface-hi'}`} onClick={() => setForm((current) => ({ ...current, bookingType: 'One-off task', price: 18 }))}>
             <strong>One-off task</strong><span className="block text-muted">£15-£20, selected price £18</span>
           </button>
-          <button className={`w-full rounded-lg border p-4 text-left ${form.bookingType === 'Weekly subscription' ? 'border-primary bg-violet-50 dark:bg-violet-900/20' : 'border-surface-hi'}`} onClick={() => setForm((current) => ({ ...current, bookingType: 'Weekly subscription', price: subscriptionPrices[current.subscription] }))}>
+          <button className={`w-full rounded-lg border p-4 text-left ${form.bookingType === 'Weekly subscription' ? 'border-stone-900 bg-stone-50 dark:border-stone-400 dark:bg-stone-800' : 'border-surface-hi'}`} onClick={() => setForm((current) => ({ ...current, bookingType: 'Weekly subscription', price: subscriptionPrices[current.subscription] }))}>
             <strong>Weekly subscription</strong><span className="block text-muted">Plans from £25/week</span>
           </button>
           {form.bookingType === 'Weekly subscription' && (

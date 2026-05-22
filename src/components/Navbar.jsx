@@ -20,14 +20,14 @@ export default function Navbar() {
   const onLogout = () => { logout(); navigate('/'); };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-surface-hi bg-surface/95 backdrop-blur-xl transition-colors duration-200">
+    <header className="sticky top-0 z-30 border-b border-stone-200 bg-white/90 backdrop-blur-xl transition-colors duration-200 dark:border-stone-800 dark:bg-stone-900/90">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3.5">
 
-        <Link to="/" className="flex items-center gap-2.5 text-lg font-extrabold text-ink">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-violet-800 text-white shadow-glow">
+        <Link to="/" className="flex items-center gap-2.5 text-lg font-bold text-ink">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-stone-900 text-white shadow-soft dark:bg-stone-100 dark:text-stone-900">
             <PackageCheck size={18} />
           </span>
-          Errand<span className="text-primary">Buddy</span>
+          Errand<span className="font-extrabold">Buddy</span>
         </Link>
 
         <div className="hidden items-center gap-0.5 md:flex">
@@ -35,7 +35,7 @@ export default function Navbar() {
             <NavLink key={path} to={path} className={({ isActive }) =>
               `rounded-lg px-3 py-2 text-sm font-semibold transition duration-150 ${
                 isActive
-                  ? 'bg-violet-100 text-primary dark:bg-violet-900/30 dark:text-violet-300'
+                  ? 'bg-stone-100 text-ink dark:bg-stone-800 dark:text-stone-100'
                   : 'text-muted hover:bg-surface-hi hover:text-ink'
               }`
             }>{label}</NavLink>
@@ -76,7 +76,7 @@ export default function Navbar() {
       </nav>
 
       {open && (
-        <div className="border-t border-surface-hi bg-surface px-4 pb-5 md:hidden">
+        <div className="border-t border-stone-200 bg-white px-4 pb-5 dark:border-stone-800 dark:bg-stone-900 md:hidden">
           <div className="mt-3 space-y-0.5">
             {navLinks.map(([label, path]) => (
               <Link key={path} to={path} onClick={() => setOpen(false)}

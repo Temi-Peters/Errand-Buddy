@@ -11,7 +11,7 @@ export const AppProvider = ({ children }) => {
   const [authLoading, setAuthLoading] = useState(Boolean(getToken()));
   const [serviceUnavailable, setServiceUnavailable] = useState(false);
   const [toast, setToast] = useState(null);
-  const [theme, setTheme] = useState(() => localStorage.getItem('eb-theme') || 'dark');
+  const [theme, setTheme] = useState(() => localStorage.getItem('eb-theme') || 'light');
 
   const toggleTheme = () => {
     setTheme(prev => {
