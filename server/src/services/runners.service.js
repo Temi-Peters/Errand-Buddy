@@ -27,8 +27,8 @@ export const updateRunnerStatus = async (runnerId, { status, rejectionReason }) 
     throw new ApiError(404, 'Runner not found');
   });
 
-  if (nextStatus === 'ACTIVE') notifyRunnerApproved(runner);
-  if (nextStatus === 'REJECTED') notifyRunnerRejected(runner);
+  if (nextStatus === 'ACTIVE') notifyRunnerApproved(runner.user);
+  if (nextStatus === 'REJECTED') notifyRunnerRejected(runner.user, data.rejectionReason);
 
   return runnerToClient(runner);
 };

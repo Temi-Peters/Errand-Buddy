@@ -55,7 +55,7 @@ export const registerUser = async (data) => {
   });
 
   if (user.runnerProfile) {
-    notifyRunnerApplicationSubmitted(user.runnerProfile);
+    notifyRunnerApplicationSubmitted(user);
   }
 
   return { token: signToken(user), user: userToClient(user) };
