@@ -4,10 +4,10 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 
 const services = [
-  ['Grocery Shopping', ShoppingBag, 'Practical help with weekly or one-off food shops.', 'Small shops, supermarket collections, essentials', 'from £18'],
-  ['Prescription Pickup', Pill, 'Careful collection from local pharmacies.', 'Repeat prescriptions, pharmacy collection, delivery home', 'from £15'],
-  ['Dry Cleaning', Shirt, 'Drop-off and collection support for busy households.', 'Suits, coats, dresses, local cleaners', 'from £15'],
-  ['General Errands', Store, 'Flexible help with everyday local tasks.', 'Post office, parcel returns, small purchases', 'from £15']
+  ['Grocery Shopping', ShoppingBag, 'Practical help with weekly or one-off food shops.', 'Small shops, supermarket collections, essentials', 'from £25'],
+  ['Prescription Pickup', Pill, 'Careful collection from local pharmacies.', 'Repeat prescriptions, pharmacy collection, delivery home', 'from £25'],
+  ['Dry Cleaning', Shirt, 'Drop-off and collection support for busy households.', 'Suits, coats, dresses, local cleaners', 'from £25'],
+  ['General Errands', Store, 'Flexible help with everyday local tasks.', 'Post office, parcel returns, small purchases', 'from £25']
 ];
 
 export default function Services() {
@@ -15,7 +15,7 @@ export default function Services() {
     <div className="space-y-8">
       <section>
         <span className="page-kicker">Services</span>
-        <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-ink">Errand services in Leicester</h1>
+        <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-ink">Local errand services</h1>
         <p className="mt-3 max-w-2xl text-lg leading-8 text-muted">Book trusted help from approved local runners for the tasks that keep your week moving.</p>
       </section>
       <div className="grid gap-5 md:grid-cols-2">

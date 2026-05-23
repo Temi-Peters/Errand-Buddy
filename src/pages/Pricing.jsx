@@ -6,7 +6,7 @@ import Card from '../components/Card';
 const plans = [
   {
     name: 'One-off',
-    price: 'from £15',
+    price: 'from £25',
     per: 'per task',
     copy: 'Pay as you go. No commitment, no subscription.',
     perks: ['No weekly commitment', 'Book same-day or in advance', 'Cancel up to 24hrs before'],
@@ -14,26 +14,26 @@ const plans = [
   },
   {
     name: '1 task/week',
-    price: '£28',
+    price: '£20',
     per: 'per week',
     copy: 'Regular help at a better rate.',
-    perks: ['Save vs one-off pricing', 'Consistent weekly runner', 'Cancel anytime'],
+    perks: ['Save £5 vs one-off', 'Consistent weekly runner', 'Cancel anytime'],
     highlight: true,
   },
   {
     name: '2 tasks/week',
-    price: '£50',
+    price: '£38',
     per: 'per week',
     copy: 'For households that need reliable weekly support.',
-    perks: ['Priority runner matching', 'Mix and match services', 'Save £6+ per week vs one-off'],
+    perks: ['Priority runner matching', 'Mix and match services', 'Save £12 per week vs one-off'],
     highlight: false,
   },
   {
     name: '3 tasks/week',
-    price: '£66',
+    price: '£54',
     per: 'per week',
     copy: 'Maximum support, best value per task.',
-    perks: ['Best rate per task', 'Flexible scheduling', 'Save £18+ per week vs one-off'],
+    perks: ['Best rate per task', 'Flexible scheduling', 'Save £21 per week vs one-off'],
     highlight: false,
   },
 ];
