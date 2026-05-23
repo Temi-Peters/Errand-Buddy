@@ -50,8 +50,7 @@ export default function Pricing() {
     <div className="space-y-10">
 
       <section className="text-center">
-        <span className="page-kicker">Pricing</span>
-        <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-ink">Clear starting prices</h1>
+        <h1 className="text-4xl font-extrabold tracking-tight text-ink">Clear starting prices</h1>
         <p className="mx-auto mt-3 max-w-xl text-lg leading-8 text-muted">
           Simple pricing for local errands. Final quotes based on task complexity, distance, and time required.
         </p>

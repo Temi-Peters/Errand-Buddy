@@ -7,8 +7,7 @@ export default function BecomeRunner() {
   return (
     <div className="space-y-8">
       <section className="rounded-2xl bg-stone-900 p-8 text-white shadow-lift sm:p-10 dark:bg-zinc-900">
-        <span className="inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-white/80">Runner applications</span>
-        <h1 className="mt-5 max-w-3xl text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">Earn by helping people in your area</h1>
+        <h1 className="max-w-3xl text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">Earn by helping people in your area</h1>
         <p className="mt-4 max-w-2xl text-lg leading-8 text-stone-400">Complete local errands, keep 90% of task fees, and work in areas you know well.</p>
         <Button as={Link} to="/register" state={{ role: 'runner' }} variant="white" className="mt-7">Apply as Runner</Button>
       </section>

@@ -146,8 +146,8 @@ export default function Admin() {
               title="Revenue vs commission by month"
               prefix="£"
               bars={[
-                { key: 'revenue', label: 'Revenue', color: '#1C1917' },
-                { key: 'commission', label: 'Commission', color: '#A8A29E' }
+                { key: 'revenue', label: 'Revenue', color: '#0EA5E9' },
+                { key: 'commission', label: 'Commission', color: '#10B981' }
               ]}
             />
           </Card>

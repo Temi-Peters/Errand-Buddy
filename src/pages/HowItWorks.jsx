@@ -69,8 +69,7 @@ export default function HowItWorks() {
 
       {/* Header */}
       <section className="text-center">
-        <span className="page-kicker">How it works</span>
-        <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-ink sm:text-5xl">
+        <h1 className="text-4xl font-extrabold tracking-tight text-ink sm:text-5xl">
           Simple from start to finish
         </h1>
         <p className="mx-auto mt-4 max-w-md text-lg leading-8 text-muted">

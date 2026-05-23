@@ -5,7 +5,8 @@ import {
 
 // ─── Shared palette ───────────────────────────────────────────────────────────
 
-export const COLORS = ['#1C1917', '#57534E', '#A8A29E', '#D6D3D1', '#78716C', '#292524'];
+// Palette chosen to be clearly distinct in both light and dark mode
+export const COLORS = ['#0EA5E9', '#10B981', '#F59E0B', '#8B5CF6', '#F43F5E', '#64748B'];
 
 const tooltipStyle = {
   contentStyle: {
@@ -59,7 +60,7 @@ export function DonutChart({ data, title }) {
 
 // ─── Vertical bar chart ───────────────────────────────────────────────────────
 
-export function BarChartVertical({ data, dataKey, xKey, title, prefix = '', suffix = '', color = '#1C1917' }) {
+export function BarChartVertical({ data, dataKey, xKey, title, prefix = '', suffix = '', color = 'var(--chart-bar)' }) {
   if (!data.length) return <EmptyState />;
 
   return (
@@ -67,8 +68,8 @@ export function BarChartVertical({ data, dataKey, xKey, title, prefix = '', suff
       {title && <p className="mb-3 text-sm font-bold text-muted">{title}</p>}
       <ResponsiveContainer width="100%" height={200}>
         <BarChart data={data} barCategoryGap="30%">
-          <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: '#78716C' }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fontSize: 11, fill: '#78716C' }} axisLine={false} tickLine={false}
+          <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: 'var(--chart-bar)' }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 11, fill: 'var(--chart-bar)' }} axisLine={false} tickLine={false}
             tickFormatter={(v) => `${prefix}${v}${suffix}`} width={40} />
           <Tooltip {...tooltipStyle} formatter={(v) => [`${prefix}${v}${suffix}`]} />
           <Bar dataKey={dataKey} fill={color} radius={[6, 6, 0, 0]} maxBarSize={48} />
@@ -80,7 +81,7 @@ export function BarChartVertical({ data, dataKey, xKey, title, prefix = '', suff
 
 // ─── Horizontal bar chart ─────────────────────────────────────────────────────
 
-export function BarChartHorizontal({ data, dataKey, yKey, title, prefix = '', suffix = '', color = '#1C1917' }) {
+export function BarChartHorizontal({ data, dataKey, yKey, title, prefix = '', suffix = '', color = 'var(--chart-bar)' }) {
   if (!data.length) return <EmptyState />;
 
   return (
@@ -88,9 +89,9 @@ export function BarChartHorizontal({ data, dataKey, yKey, title, prefix = '', su
       {title && <p className="mb-3 text-sm font-bold text-muted">{title}</p>}
       <ResponsiveContainer width="100%" height={Math.max(data.length * 52, 120)}>
         <BarChart data={data} layout="vertical" barCategoryGap="25%">
-          <XAxis type="number" tick={{ fontSize: 11, fill: '#78716C' }} axisLine={false} tickLine={false}
+          <XAxis type="number" tick={{ fontSize: 11, fill: 'var(--chart-bar)' }} axisLine={false} tickLine={false}
             tickFormatter={(v) => `${prefix}${v}${suffix}`} />
-          <YAxis type="category" dataKey={yKey} tick={{ fontSize: 12, fill: '#1C1917', fontWeight: 600 }}
+          <YAxis type="category" dataKey={yKey} tick={{ fontSize: 12, fill: 'var(--chart-bar)', fontWeight: 600 }}
             axisLine={false} tickLine={false} width={110} />
           <Tooltip {...tooltipStyle} formatter={(v) => [`${prefix}${v}${suffix}`]} />
           <Bar dataKey={dataKey} fill={color} radius={[0, 6, 6, 0]} maxBarSize={32} />
@@ -110,8 +111,8 @@ export function MultiBarChart({ data, bars, xKey, title, prefix = '' }) {
       {title && <p className="mb-3 text-sm font-bold text-muted">{title}</p>}
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={data} barCategoryGap="30%">
-          <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: '#78716C' }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fontSize: 11, fill: '#78716C' }} axisLine={false} tickLine={false}
+          <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: 'var(--chart-bar)' }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 11, fill: 'var(--chart-bar)' }} axisLine={false} tickLine={false}
             tickFormatter={(v) => `${prefix}${v}`} width={44} />
           <Tooltip {...tooltipStyle} formatter={(v) => [`${prefix}${Number(v) % 1 === 0 ? v : Number(v).toFixed(2)}`]} />
           {bars.map(({ key, label, color }) => (

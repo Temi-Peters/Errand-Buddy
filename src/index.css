@@ -64,10 +64,12 @@ select {
 :root {
   --glow-color: rgba(28,25,23,0.13);
   --glow-ring:  rgba(28,25,23,0.11);
+  --chart-bar:  #1C1917;
 }
 .dark {
   --glow-color: rgba(245,245,247,0.13);
   --glow-ring:  rgba(245,245,247,0.11);
+  --chart-bar:  #E7E5E4;
 }
 
 /* ── Hoverable glow utility ─────────────────────────────── */

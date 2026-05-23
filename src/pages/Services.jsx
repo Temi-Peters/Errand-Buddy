@@ -14,8 +14,7 @@ export default function Services() {
   return (
     <div className="space-y-8">
       <section>
-        <span className="page-kicker">Services</span>
-        <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-ink">Local errand services</h1>
+        <h1 className="text-4xl font-extrabold tracking-tight text-ink">Local errand services</h1>
         <p className="mt-3 max-w-2xl text-lg leading-8 text-muted">Book trusted help from approved local runners for the tasks that keep your week moving.</p>
       </section>
       <div className="grid gap-5 md:grid-cols-2">
