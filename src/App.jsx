@@ -15,6 +15,7 @@ import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 import Contact from './pages/Contact';
 import Welcome from './pages/Welcome';
+import RevenueModel from './pages/RevenueModel';
 import { useApp } from './context/AppContext';
 
 function ProtectedRoute({ role, children }) {
@@ -49,6 +50,7 @@ export default function App() {
         <Route path="/customer/dashboard" element={<ProtectedRoute role="customer"><CustomerDashboard /></ProtectedRoute>} />
         <Route path="/runner/dashboard" element={<ProtectedRoute role="runner"><RunnerDashboard /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute role="admin"><Admin /></ProtectedRoute>} />
+        <Route path="/admin/revenue-model" element={<ProtectedRoute role="admin"><RevenueModel /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>

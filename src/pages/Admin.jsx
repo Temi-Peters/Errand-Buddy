@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { BarChart3, ClipboardList, MessageSquare, PoundSterling, UserCheck, Users } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { BarChart3, ClipboardList, LineChart, MessageSquare, PoundSterling, UserCheck, Users } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import { BarChartHorizontal, BarChartVertical, DonutChart, MultiBarChart } from '../components/Charts';
@@ -68,7 +69,22 @@ export default function Admin() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl bg-stone-900 p-5 text-white shadow-lift sm:p-6 dark:bg-zinc-900"><p className="text-xs font-semibold uppercase tracking-widest text-stone-400">Operations</p><h1 className="mt-2 text-2xl font-bold sm:text-3xl">Admin panel</h1><p className="mt-1 text-stone-400">Marketplace overview, runner approvals and booking operations.</p></div>
+      <div className="rounded-2xl bg-stone-900 p-5 text-white shadow-lift sm:p-6 dark:bg-zinc-900">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-stone-400">Operations</p>
+            <h1 className="mt-2 text-2xl font-bold sm:text-3xl">Admin panel</h1>
+            <p className="mt-1 text-stone-400">Marketplace overview, runner approvals and booking operations.</p>
+          </div>
+          <Link
+            to="/admin/revenue-model"
+            className="flex shrink-0 items-center gap-2 rounded-xl border border-stone-700 px-4 py-2.5 text-sm font-semibold text-stone-300 transition hover:border-stone-500 hover:text-white"
+          >
+            <LineChart size={16} />
+            Revenue Model
+          </Link>
+        </div>
+      </div>
       <div className="flex justify-center">
         <div className="flex gap-2 overflow-x-auto rounded-xl bg-surface-hi p-2">
           {tabs.map((tab) => (
