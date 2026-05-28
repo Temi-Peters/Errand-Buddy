@@ -68,6 +68,9 @@ export const listBookings = async (user) => {
   return bookings.map(bookingToClient);
 };
 
+// Services open for customer booking — update here when new services launch
+const BOOKABLE_SERVICE_TYPES = new Set(['GROCERY_SHOPPING', 'PRESCRIPTION_PICKUP']);
+
 export const createBooking = async (user, data) => {
   if (user.role !== 'CUSTOMER' || !user.customerProfile) {
     throw new ApiError(403, 'Only customers can create bookings');
@@ -76,6 +79,10 @@ export const createBooking = async (user, data) => {
   const serviceType = serviceTypeFromClient(data.serviceType);
   if (!serviceType) {
     throw new ApiError(400, 'Valid service type is required');
+  }
+
+  if (!BOOKABLE_SERVICE_TYPES.has(serviceType)) {
+    throw new ApiError(400, 'This service is not currently available for booking');
   }
 
   const price = Number(data.price);

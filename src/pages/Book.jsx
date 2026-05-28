@@ -6,7 +6,7 @@ import Card from '../components/Card';
 import ServiceCard from '../components/ServiceCard';
 import StatusBadge from '../components/StatusBadge';
 import { useApp } from '../context/AppContext';
-import { areas, serviceTypes } from '../data/options';
+import { areas, bookableServiceTypes } from '../data/options';
 
 const blankForm = {
   serviceType: '',
@@ -26,9 +26,9 @@ const blankForm = {
 };
 
 const subscriptionPrices = {
-  '1 task/week': 28,
-  '2 tasks/week': 50,
-  '3 tasks/week': 66
+  '1 task/week': 20,
+  '2 tasks/week': 38,
+  '3 tasks/week': 54
 };
 
 export default function Book() {
@@ -107,16 +107,16 @@ export default function Book() {
         <p className="mt-2 text-sm font-semibold text-muted">Step {step} of 6</p>
       </div>
 
-      {step === 1 && <Card><h2 className="mb-4 text-xl font-bold">Choose a service</h2><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{serviceTypes.map((service) => <ServiceCard key={service} service={service} selected={form.serviceType === service} onClick={() => update('serviceType', service)} />)}</div></Card>}
+      {step === 1 && <Card><h2 className="mb-4 text-xl font-bold">Choose a service</h2><div className="grid gap-4 sm:grid-cols-2">{bookableServiceTypes.map((service) => <ServiceCard key={service} service={service} selected={form.serviceType === service} onClick={() => update('serviceType', service)} />)}</div></Card>}
 
       {step === 2 && (
         <Card className="space-y-4">
           <h2 className="text-xl font-bold">Choose booking type</h2>
-          <button className={`w-full rounded-lg border p-4 text-left ${form.bookingType === 'One-off task' ? 'border-stone-900 bg-stone-50 dark:border-zinc-400 dark:bg-zinc-900' : 'border-surface-hi'}`} onClick={() => setForm((current) => ({ ...current, bookingType: 'One-off task', price: 18 }))}>
-            <strong>One-off task</strong><span className="block text-muted">£15-£20, selected price £18</span>
+          <button className={`w-full rounded-lg border p-4 text-left ${form.bookingType === 'One-off task' ? 'border-stone-900 bg-stone-50 dark:border-zinc-400 dark:bg-zinc-900' : 'border-surface-hi'}`} onClick={() => setForm((current) => ({ ...current, bookingType: 'One-off task', price: 25 }))}>
+            <strong>One-off task</strong><span className="block text-muted">from £25 per task</span>
           </button>
           <button className={`w-full rounded-lg border p-4 text-left ${form.bookingType === 'Weekly subscription' ? 'border-stone-900 bg-stone-50 dark:border-zinc-400 dark:bg-zinc-900' : 'border-surface-hi'}`} onClick={() => setForm((current) => ({ ...current, bookingType: 'Weekly subscription', price: subscriptionPrices[current.subscription] }))}>
-            <strong>Weekly subscription</strong><span className="block text-muted">Plans from £25/week</span>
+            <strong>Weekly subscription</strong><span className="block text-muted">from £20/week — save vs one-off</span>
           </button>
           {form.bookingType === 'Weekly subscription' && (
             <select className="focus-ring min-h-11 w-full rounded-lg border border-surface-hi px-3" value={form.subscription} onChange={(e) => setForm((current) => ({ ...current, subscription: e.target.value, price: subscriptionPrices[e.target.value] }))}>

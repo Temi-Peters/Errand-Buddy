@@ -1,12 +1,10 @@
-import { ArrowRight, ListChecks, Pill, Shirt, ShoppingCart } from 'lucide-react';
+import { ArrowRight, Pill, ShoppingCart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Button from '../components/Button';
 
 const services = [
-  { name: 'Grocery Shopping',    Icon: ShoppingCart, href: '/services' },
-  { name: 'Prescription Pickup', Icon: Pill,         href: '/services' },
-  { name: 'Dry Cleaning',        Icon: Shirt,        href: '/services' },
-  { name: 'General Errands',     Icon: ListChecks,   href: '/services' },
+  { name: 'Grocery Shopping',    Icon: ShoppingCart, href: '/book' },
+  { name: 'Prescription Pickup', Icon: Pill,         href: '/book' },
 ];
 
 export default function Home() {
@@ -19,7 +17,7 @@ export default function Home() {
           Local help,<br />when you need it.
         </h1>
         <p className="mx-auto mt-5 max-w-md text-base leading-7 text-muted sm:text-lg">
-          Book a trusted local runner for groceries, prescriptions, dry cleaning, and more — wherever you are.
+          Book a trusted local runner for groceries and prescriptions — wherever you are.
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button as={Link} to="/book" className="w-full px-10 py-3 text-base sm:w-auto">
@@ -33,7 +31,7 @@ export default function Home() {
 
       {/* Services — icon + name only, no descriptions */}
       <section>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        <div className="mx-auto grid max-w-lg grid-cols-2 gap-3 sm:gap-4">
           {services.map(({ name, Icon, href }) => (
             <Link
               key={name}
