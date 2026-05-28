@@ -73,5 +73,6 @@ export const api = {
   updateProfile: (role, id, data) => request(`/${role === 'runner' ? 'runners' : 'customers'}/${id}`, { method: 'PATCH', body: data }),
   customers: () => request('/customers'),
   adminOverview: () => request('/admin/overview'),
-  mockPaymentIntent: (data) => request('/payments/mock-intent', { method: 'POST', body: data })
+  runnerConnectLink: () => request('/payments/runner/connect', { method: 'POST' }),
+  runnerConnectStatus: () => request('/payments/runner/connect/status')
 };

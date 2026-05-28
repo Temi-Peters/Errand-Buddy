@@ -1,5 +1,7 @@
 import { prisma } from '../config/prisma.js';
+import { env } from '../config/env.js';
 import { ApiError } from '../middleware/errorHandler.js';
+import { createPaymentIntent, createTransfer, updatePaymentIntentMetadata } from './stripe.service.js';
 import {
   bookingStatusFromClient,
   bookingToClient,
@@ -91,6 +93,14 @@ export const createBooking = async (user, data) => {
   }
 
   const fee = platformFee(price);
+
+  // Create the Stripe PaymentIntent first so we have a real intent ID to store
+  const intent = await createPaymentIntent({
+    amount: price,
+    currency: 'gbp',
+    metadata: { customerId: user.customerProfile.id, serviceType }
+  });
+
   const booking = await prisma.booking.create({
     data: {
       customerId: user.customerProfile.id,
@@ -100,7 +110,7 @@ export const createBooking = async (user, data) => {
       date: new Date(`${data.date}T00:00:00.000Z`),
       time: data.time,
       price,
-      status: 'PENDING',
+      status: 'PENDING_PAYMENT',
       instructions: data.instructions,
       address: data.address,
       contactPhone: data.contactPhone,
@@ -110,7 +120,7 @@ export const createBooking = async (user, data) => {
           amount: price,
           currency: 'gbp',
           status: 'REQUIRES_CONFIRMATION',
-          stripePaymentIntentId: `pi_test_mock_${Date.now()}`,
+          stripePaymentIntentId: intent.id,
           platformFeeAmount: fee,
           runnerPayoutAmount: price - fee
         }
@@ -119,9 +129,16 @@ export const createBooking = async (user, data) => {
     include: bookingInclude
   });
 
+  // Backfill the bookingId into the intent metadata now we have the real ID
+  // Fire-and-forget — webhook matches by stripePaymentIntentId, so this is best-effort
+  updatePaymentIntentMetadata(intent.id, { bookingId: booking.id }).catch(() => {});
+
   notifyBookingCreated(booking);
 
-  return bookingToClient(booking);
+  return {
+    booking: bookingToClient(booking),
+    clientSecret: intent.client_secret
+  };
 };
 
 export const updateBooking = async (user, id, data) => {
@@ -217,6 +234,28 @@ export const completeBooking = async (user, id) => {
     where: { id: user.runnerProfile.id },
     data: { completedTasks: { increment: 1 } }
   });
+
+  // Trigger runner payout if they have a Connect account and payment has succeeded
+  try {
+    const payment = await prisma.payment.findUnique({ where: { bookingId: id } });
+    const runner = await prisma.runnerProfile.findUnique({ where: { id: user.runnerProfile.id } });
+
+    if (payment?.status === 'SUCCEEDED' && runner?.stripeAccountId && !payment.stripeTransferId) {
+      const transfer = await createTransfer({
+        amount: Number(payment.runnerPayoutAmount),
+        destination: runner.stripeAccountId,
+        metadata: { bookingId: id, runnerId: runner.id }
+      });
+
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: { stripeTransferId: transfer.id }
+      });
+    }
+  } catch (err) {
+    // Log but don't fail the completion — payout can be retried manually
+    console.error(`[payout] Failed to transfer for booking ${id}:`, err.message);
+  }
 
   return updated;
 };

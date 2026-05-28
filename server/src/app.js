@@ -9,6 +9,7 @@ import { authRouter } from './routes/auth.routes.js';
 import { bookingsRouter } from './routes/bookings.routes.js';
 import { customersRouter, runnersRouter } from './routes/profiles.routes.js';
 import { paymentsRouter } from './routes/payments.routes.js';
+import { handleWebhook } from './controllers/payments.controller.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 
 export const app = express();
@@ -27,6 +28,10 @@ app.use(cors({
   credentials: true
 }));
 app.use(helmet());
+
+// Stripe webhook needs the raw request body — must be registered BEFORE express.json()
+app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), handleWebhook);
+
 app.use(express.json());
 
 const generalLimiter = rateLimit({

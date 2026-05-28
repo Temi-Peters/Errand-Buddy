@@ -18,7 +18,8 @@ export const index = async (req, res, next) => {
 
 export const create = async (req, res, next) => {
   try {
-    res.status(201).json({ booking: await createBooking(req.user, req.body) });
+    const { booking, clientSecret } = await createBooking(req.user, req.body);
+    res.status(201).json({ booking, clientSecret });
   } catch (error) {
     next(error);
   }

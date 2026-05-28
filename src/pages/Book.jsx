@@ -1,12 +1,15 @@
-import { CreditCard } from 'lucide-react';
+import { Elements } from '@stripe/react-stripe-js';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { api } from '../api/client';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import CheckoutForm from '../components/CheckoutForm';
 import ServiceCard from '../components/ServiceCard';
 import StatusBadge from '../components/StatusBadge';
 import { useApp } from '../context/AppContext';
 import { areas, bookableServiceTypes } from '../data/options';
+import { stripePromise } from '../lib/stripe';
 
 const blankForm = {
   serviceType: '',
@@ -18,11 +21,7 @@ const blankForm = {
   instructions: '',
   address: '',
   contactPhone: '',
-  postcodeArea: 'Oadby',
-  cardName: '',
-  cardNumber: '',
-  expiry: '',
-  cvc: ''
+  postcodeArea: 'Oadby'
 };
 
 const subscriptionPrices = {
@@ -35,8 +34,9 @@ export default function Book() {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(blankForm);
   const [confirmed, setConfirmed] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const { addBooking, authUser, customers, showToast } = useApp();
+  const [clientSecret, setClientSecret] = useState(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const { authUser, customers, showToast } = useApp();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -52,7 +52,6 @@ export default function Book() {
       2: form.bookingType && form.price,
       3: form.date && form.time && form.instructions.trim().length > 5,
       4: form.address.trim() && form.contactPhone.trim() && form.postcodeArea,
-      5: form.cardName.trim() && form.cardNumber.trim().length >= 12 && form.expiry.trim() && form.cvc.trim().length >= 3
     };
     if (!rules[step]) {
       showToast('Please complete this step before continuing.', 'error');
@@ -63,38 +62,44 @@ export default function Book() {
 
   const next = () => validate() && setStep((current) => current + 1);
 
-  const confirm = async () => {
-    if (!validate()) return;
-    setLoading(true);
-    try {
-      const customer = customers.find((item) => item.id === authUser.id);
-      if (!customer) {
-        showToast('Customer profile is not ready. Please try again.', 'error');
-        return;
-      }
-      const booking = {
-        id: '',
-        customerId: customer.id,
-        runnerId: null,
-        serviceType: form.serviceType,
-        bookingType: form.bookingType === 'Weekly subscription' ? `Weekly subscription - ${form.subscription}` : 'One-off task',
-        date: form.date,
-        time: form.time,
-        price: Number(form.price),
-        status: 'Pending',
-        rating: null,
-        instructions: form.instructions,
-        address: form.address,
-        contactPhone: form.contactPhone,
-        postcodeArea: form.postcodeArea
-      };
-      const saved = await addBooking(booking);
-      setConfirmed(saved);
-      setStep(6);
-      showToast('Booking request created');
-    } finally {
-      setLoading(false);
+  // When the user reaches step 5, create the booking + Stripe PaymentIntent
+  useEffect(() => {
+    if (step !== 5 || clientSecret) return;
+
+    const customer = customers.find((item) => item.id === authUser?.id);
+    if (!customer) {
+      showToast('Customer profile not ready. Please try again.', 'error');
+      setStep(4);
+      return;
     }
+
+    setPaymentLoading(true);
+    api.createBooking({
+      serviceType: form.serviceType,
+      bookingType: form.bookingType === 'Weekly subscription' ? `Weekly subscription - ${form.subscription}` : 'One-off task',
+      subscription: form.subscription,
+      date: form.date,
+      time: form.time,
+      price: Number(form.price),
+      instructions: form.instructions,
+      address: form.address,
+      contactPhone: form.contactPhone,
+      postcodeArea: form.postcodeArea
+    })
+      .then(({ booking, clientSecret: secret }) => {
+        setConfirmed(booking);
+        setClientSecret(secret);
+      })
+      .catch((err) => {
+        showToast(err.message || 'Could not create booking. Please try again.', 'error');
+        setStep(4);
+      })
+      .finally(() => setPaymentLoading(false));
+  }, [step]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handlePaymentSuccess = () => {
+    showToast('Payment confirmed!');
+    setStep(6);
   };
 
   return (
@@ -133,13 +138,32 @@ export default function Book() {
       {step === 4 && <Card className="space-y-4"><h2 className="text-xl font-bold">Location and contact</h2><input className="focus-ring min-h-11 w-full rounded-lg border border-surface-hi px-3" placeholder="Address" value={form.address} onChange={(e) => update('address', e.target.value)} /><input className="focus-ring min-h-11 w-full rounded-lg border border-surface-hi px-3" placeholder="Contact phone" value={form.contactPhone} onChange={(e) => update('contactPhone', e.target.value)} /><select className="focus-ring min-h-11 w-full rounded-lg border border-surface-hi px-3" value={form.postcodeArea} onChange={(e) => update('postcodeArea', e.target.value)}>{areas.map((area) => <option key={area}>{area}</option>)}</select></Card>}
 
       {step === 5 && (
-        <Card className="space-y-4">
-          <h2 className="flex items-center gap-2 text-xl font-bold"><CreditCard /> Test payment and request</h2>
-          <p className="text-muted">No live payment will be taken in this MVP. This creates a booking request with a test payment record.</p>
-          <div className="rounded-lg bg-surface-hi p-4"><p className="font-bold">{form.serviceType}</p><p className="text-muted">{form.date} at {form.time}</p><p className="mt-2 text-2xl font-black">£{form.price}</p></div>
-          <input className="focus-ring min-h-11 w-full rounded-lg border border-surface-hi px-3" placeholder="Name on card" value={form.cardName} onChange={(e) => update('cardName', e.target.value)} />
-          <input className="focus-ring min-h-11 w-full rounded-lg border border-surface-hi px-3" placeholder="4242 4242 4242 4242" value={form.cardNumber} onChange={(e) => update('cardNumber', e.target.value)} />
-          <div className="grid grid-cols-2 gap-3"><input className="focus-ring min-h-11 rounded-lg border border-surface-hi px-3" placeholder="MM/YY" value={form.expiry} onChange={(e) => update('expiry', e.target.value)} /><input className="focus-ring min-h-11 rounded-lg border border-surface-hi px-3" placeholder="CVC" value={form.cvc} onChange={(e) => update('cvc', e.target.value)} /></div>
+        <Card className="space-y-5">
+          <div>
+            <h2 className="text-xl font-bold">Payment</h2>
+            <div className="mt-3 rounded-xl bg-surface-hi p-4">
+              <p className="font-bold">{form.serviceType}</p>
+              <p className="text-sm text-muted">{form.date} at {form.time}</p>
+              <p className="mt-1 text-2xl font-black">£{form.price}</p>
+            </div>
+          </div>
+          {paymentLoading && (
+            <p className="text-sm text-muted">Preparing payment…</p>
+          )}
+          {clientSecret && (
+            <Elements
+              stripe={stripePromise}
+              options={{
+                clientSecret,
+                appearance: {
+                  theme: 'stripe',
+                  variables: { fontFamily: '"Plus Jakarta Sans", sans-serif', borderRadius: '8px', colorPrimary: '#1C1917' }
+                }
+              }}
+            >
+              <CheckoutForm price={form.price} onSuccess={handlePaymentSuccess} />
+            </Elements>
+          )}
         </Card>
       )}
 
@@ -148,7 +172,7 @@ export default function Book() {
       {step < 6 && (
         <div className="mt-6 flex justify-between gap-3">
           <Button variant="outline" disabled={step === 1} onClick={() => setStep((current) => current - 1)}>Back</Button>
-          {step === 5 ? <Button loading={loading} onClick={confirm}>Confirm booking</Button> : <Button onClick={next}>Continue</Button>}
+          {step < 5 && <Button onClick={next}>Continue</Button>}
         </div>
       )}
     </div>

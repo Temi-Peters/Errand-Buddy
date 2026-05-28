@@ -1,5 +1,6 @@
-import { CheckCircle2, ClipboardList, MessageSquare, Pencil, Star, WalletCards } from 'lucide-react';
+import { CheckCircle2, ClipboardList, ExternalLink, MessageSquare, Pencil, ShieldCheck, Star, WalletCards } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { api } from '../api/client';
 import BookingCard from '../components/BookingCard';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -21,7 +22,28 @@ export default function RunnerDashboard() {
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState(null);
   const [profileSaving, setProfileSaving] = useState(false);
+  const [connectStatus, setConnectStatus] = useState(null);
+  const [connectLoading, setConnectLoading] = useState(false);
   const runner = runners.find((item) => item.id === authUser.id);
+
+  useEffect(() => {
+    if (activeTab !== 'Profile' || connectStatus !== null) return;
+    api.runnerConnectStatus()
+      .then(setConnectStatus)
+      .catch(() => {}); // non-critical
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleConnectOnboard = async () => {
+    setConnectLoading(true);
+    try {
+      const { url } = await api.runnerConnectLink();
+      window.location.href = url;
+    } catch (err) {
+      showToast(err.message || 'Could not start payout setup. Try again.', 'error');
+    } finally {
+      setConnectLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!contact) return;
@@ -251,6 +273,48 @@ export default function RunnerDashboard() {
                   <span className="font-semibold text-ink">{value}</span>
                 </div>
               ))}
+            </div>
+          </Card>
+
+          <Card>
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-hi text-muted">
+                <WalletCards size={18} />
+              </span>
+              <div>
+                <h2 className="text-lg font-bold text-ink">Payouts</h2>
+                <p className="text-sm text-muted">Receive earnings directly to your bank account</p>
+              </div>
+            </div>
+
+            <div className="mt-4">
+              {!connectStatus && (
+                <p className="text-sm text-muted">Checking payout status…</p>
+              )}
+              {connectStatus && !connectStatus.connected && (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted">Set up your payout account to receive earnings from completed tasks. Powered by Stripe.</p>
+                  <Button onClick={handleConnectOnboard} loading={connectLoading} className="w-full">
+                    <ExternalLink size={14} /> Set up payouts
+                  </Button>
+                </div>
+              )}
+              {connectStatus?.connected && !connectStatus.detailsSubmitted && (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted">Your payout setup isn't complete yet.</p>
+                  <Button onClick={handleConnectOnboard} loading={connectLoading} variant="outline" className="w-full">
+                    <ExternalLink size={14} /> Complete payout setup
+                  </Button>
+                </div>
+              )}
+              {connectStatus?.connected && connectStatus.detailsSubmitted && (
+                <div className="flex items-center gap-2 rounded-xl bg-surface-hi p-3 text-sm">
+                  <ShieldCheck size={16} className="text-secondary" />
+                  <span className="font-semibold text-ink">
+                    {connectStatus.payoutsEnabled ? 'Payouts active — earnings transfer automatically' : 'Account submitted — awaiting Stripe approval'}
+                  </span>
+                </div>
+              )}
             </div>
           </Card>
         </div>

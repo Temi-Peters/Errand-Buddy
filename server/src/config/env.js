@@ -11,6 +11,7 @@ export const env = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   platformFeePercent: Number(process.env.PLATFORM_FEE_PERCENT || 10),
   stripeSecretKey: process.env.STRIPE_SECRET_KEY || '',
+  stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
   resendApiKey: process.env.RESEND_API_KEY || '',
   resendFrom: process.env.RESEND_FROM || 'ErrandBuddy <onboarding@resend.dev>'
 };
