@@ -1,19 +1,25 @@
+import { Elements } from '@stripe/react-stripe-js';
 import { CalendarCheck, Clock, MessageSquare, Pencil, Plus, Star, WalletCards } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { api } from '../api/client';
 import BookingCard from '../components/BookingCard';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import { BarChartHorizontal, DonutChart } from '../components/Charts';
+import CheckoutForm from '../components/CheckoutForm';
 import Modal from '../components/Modal';
 import StatusBadge from '../components/StatusBadge';
 import { useApp } from '../context/AppContext';
 import { areas } from '../data/options';
+import { stripePromise } from '../lib/stripe';
 
-const tabs = ['Overview', 'My Bookings', 'Messages', 'Account'];
+const tabs = ['Overview', 'My Bookings', 'Wallet', 'Messages', 'Account'];
+
+const TOP_UP_AMOUNTS = [10, 20, 50, 100];
 
 export default function CustomerDashboard() {
-  const { authUser, bookings, runners, customers, updateBooking, fetchMessages, sendMessage, updateProfile, showToast } = useApp();
+  const { authUser, bookings, runners, customers, updateBooking, fetchMessages, sendMessage, updateProfile, showToast, wallet, fetchWallet, setWallet } = useApp();
   const [activeTab, setActiveTab] = useState('Overview');
   const [ratingBooking, setRatingBooking] = useState(null);
   const [contact, setContact] = useState(null);
@@ -25,6 +31,15 @@ export default function CustomerDashboard() {
   const [editing, setEditing] = useState(false);
   const [profileForm, setProfileForm] = useState(null);
   const [profileSaving, setProfileSaving] = useState(false);
+
+  // Wallet state
+  const [walletLoading, setWalletLoading] = useState(false);
+  const [topUpAmount, setTopUpAmount] = useState(20);
+  const [topUpClientSecret, setTopUpClientSecret] = useState(null);
+  const [topUpLoading, setTopUpLoading] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
 
   const mine = bookings.filter((b) => b.customerId === authUser.id);
   const grouped = {
@@ -63,6 +78,12 @@ export default function CustomerDashboard() {
   };
 
   useEffect(() => {
+    if (activeTab !== 'Wallet') return;
+    setWalletLoading(true);
+    fetchWallet().finally(() => setWalletLoading(false));
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
     if (!contact) return;
     fetchMessages(contact.booking.id).then(setMessages).catch(() => setMessages([]));
   }, [contact]);
@@ -81,6 +102,42 @@ export default function CustomerDashboard() {
       setMessages(await fetchMessages(contact.booking.id));
     } finally {
       setMessageLoading(false); }
+  };
+
+  const startTopUp = async () => {
+    setTopUpLoading(true);
+    try {
+      const { clientSecret } = await api.walletTopUp(topUpAmount);
+      setTopUpClientSecret(clientSecret);
+    } catch (err) {
+      showToast(err.message || 'Could not initiate top-up', 'error');
+    } finally {
+      setTopUpLoading(false);
+    }
+  };
+
+  const handleTopUpSuccess = () => {
+    setTopUpClientSecret(null);
+    showToast(`£${topUpAmount} added to your wallet`);
+    fetchWallet();
+  };
+
+  const submitWithdraw = async () => {
+    const amount = Number(withdrawAmount);
+    if (!amount || amount <= 0) { showToast('Enter a valid amount', 'error'); return; }
+    setWithdrawLoading(true);
+    try {
+      const { newBalance } = await api.walletWithdraw(amount);
+      setWallet((prev) => ({ ...prev, balance: newBalance }));
+      setShowWithdrawModal(false);
+      setWithdrawAmount('');
+      showToast(`Withdrawal of £${amount.toFixed(2)} requested — refund within 3–5 business days`);
+      fetchWallet();
+    } catch (err) {
+      showToast(err.message || 'Could not process withdrawal', 'error');
+    } finally {
+      setWithdrawLoading(false);
+    }
   };
 
   const renderBooking = (booking) => (
@@ -212,6 +269,112 @@ export default function CustomerDashboard() {
         </div>
       )}
 
+      {/* ── Wallet ───────────────────────────────────────────────────────── */}
+      {activeTab === 'Wallet' && (
+        <div className="space-y-4">
+          {/* Balance card */}
+          <Card className="bg-stone-900 text-white dark:bg-zinc-900">
+            <p className="text-xs font-semibold uppercase tracking-widest text-stone-400">Wallet balance</p>
+            {walletLoading ? (
+              <p className="mt-2 text-muted text-sm">Loading…</p>
+            ) : (
+              <p className="mt-1 text-4xl font-black">£{wallet.balance.toFixed(2)}</p>
+            )}
+            {wallet.balance < 0 && (
+              <p className="mt-2 rounded-lg bg-red-900/40 px-3 py-2 text-sm text-red-300">
+                Negative balance — new bookings are paused until this is cleared.
+              </p>
+            )}
+          </Card>
+
+          {/* Top-up */}
+          <Card className="space-y-4">
+            <h2 className="text-lg font-bold text-ink">Top up wallet</h2>
+            <p className="text-sm text-muted">Add funds to cover the cost of goods your runner purchases on your behalf.</p>
+
+            {!topUpClientSecret ? (
+              <>
+                <div className="grid grid-cols-4 gap-2">
+                  {TOP_UP_AMOUNTS.map((amt) => (
+                    <button
+                      key={amt}
+                      onClick={() => setTopUpAmount(amt)}
+                      className={`rounded-lg border py-3 text-sm font-bold transition ${topUpAmount === amt ? 'border-stone-900 bg-stone-50 dark:border-zinc-400 dark:bg-zinc-900' : 'border-surface-hi text-muted hover:border-stone-400'}`}
+                    >
+                      £{amt}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-muted">Custom:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="500"
+                    className="focus-ring min-h-10 w-28 rounded-lg border border-surface-hi px-3 text-sm"
+                    placeholder="£ amount"
+                    value={TOP_UP_AMOUNTS.includes(topUpAmount) ? '' : topUpAmount}
+                    onChange={(e) => setTopUpAmount(Number(e.target.value))}
+                  />
+                </div>
+                <Button loading={topUpLoading} onClick={startTopUp} className="w-full">
+                  Top up £{topUpAmount}
+                </Button>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-xl bg-surface-hi p-3 text-sm font-semibold text-ink">
+                  Adding £{topUpAmount} to your wallet
+                </div>
+                <Elements
+                  stripe={stripePromise}
+                  options={{
+                    clientSecret: topUpClientSecret,
+                    appearance: { theme: 'stripe', variables: { fontFamily: '"Plus Jakarta Sans", sans-serif', borderRadius: '8px', colorPrimary: '#1C1917' } }
+                  }}
+                >
+                  <CheckoutForm price={topUpAmount} onSuccess={handleTopUpSuccess} />
+                </Elements>
+                <button className="text-sm text-muted underline" onClick={() => setTopUpClientSecret(null)}>Cancel</button>
+              </div>
+            )}
+          </Card>
+
+          {/* Withdraw */}
+          {wallet.balance > 0 && (
+            <Card className="flex items-center justify-between gap-4">
+              <div>
+                <p className="font-bold text-ink">Withdraw funds</p>
+                <p className="text-sm text-muted">Refunded to your original payment method within 3–5 business days.</p>
+              </div>
+              <Button variant="outline" className="flex-shrink-0" onClick={() => setShowWithdrawModal(true)}>Withdraw</Button>
+            </Card>
+          )}
+
+          {/* Transaction history */}
+          <Card>
+            <h2 className="mb-4 text-lg font-bold text-ink">Transaction history</h2>
+            {wallet.transactions.length === 0 ? (
+              <p className="text-sm text-muted">No transactions yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {wallet.transactions.map((tx) => (
+                  <div key={tx.id} className="flex items-center justify-between border-b border-surface-hi pb-2 last:border-0">
+                    <div>
+                      <p className="text-sm font-semibold capitalize text-ink">{tx.type.replace('_', ' ')}</p>
+                      <p className="text-xs text-muted">{tx.description} · {new Date(tx.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                    </div>
+                    <span className={`text-sm font-bold ${['deposit', 'reimbursement'].includes(tx.type) ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      {['deposit', 'reimbursement'].includes(tx.type) ? '+' : '−'}£{tx.amount.toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
       {/* ── Messages ─────────────────────────────────────────────────────── */}
       {activeTab === 'Messages' && (
         <div className="space-y-4">
@@ -313,6 +476,26 @@ export default function CustomerDashboard() {
             </div>
           </Card>
         </div>
+      )}
+
+      {/* ── Withdraw modal ───────────────────────────────────────────────── */}
+      {showWithdrawModal && (
+        <Modal title="Withdraw funds" onClose={() => { setShowWithdrawModal(false); setWithdrawAmount(''); }}>
+          <div className="space-y-4">
+            <p className="text-sm text-muted">Available: <strong className="text-ink">£{wallet.balance.toFixed(2)}</strong></p>
+            <input
+              type="number"
+              min="0.01"
+              max={wallet.balance}
+              step="0.01"
+              className="focus-ring min-h-11 w-full rounded-lg border border-surface-hi px-3"
+              placeholder="Amount to withdraw"
+              value={withdrawAmount}
+              onChange={(e) => setWithdrawAmount(e.target.value)}
+            />
+            <Button className="w-full" loading={withdrawLoading} onClick={submitWithdraw}>Confirm withdrawal</Button>
+          </div>
+        </Modal>
       )}
 
       {/* ── Rating modal ─────────────────────────────────────────────────── */}

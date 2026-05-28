@@ -12,6 +12,7 @@ export const AppProvider = ({ children }) => {
   const [serviceUnavailable, setServiceUnavailable] = useState(false);
   const [toast, setToast] = useState(null);
   const [theme, setTheme] = useState(() => localStorage.getItem('eb-theme') || 'light');
+  const [wallet, setWallet] = useState({ balance: 0, transactions: [] });
 
   const toggleTheme = () => {
     setTheme(prev => {
@@ -246,6 +247,17 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const fetchWallet = async () => {
+    try {
+      const response = await api.wallet();
+      setWallet(response);
+      return response;
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  };
+
   const updateProfile = async (data) => {
     try {
       const response = await api.updateProfile(authUser.role, authUser.id, data);
@@ -280,6 +292,7 @@ export const AppProvider = ({ children }) => {
     serviceUnavailable,
     toast,
     theme,
+    wallet,
     showToast,
     toggleTheme,
     login,
@@ -292,8 +305,10 @@ export const AppProvider = ({ children }) => {
     fetchMessages,
     sendMessage,
     updateRunnerStatus,
-    updateProfile
-  }), [customers, runners, bookings, authUser, authLoading, serviceUnavailable, toast, theme]);
+    updateProfile,
+    fetchWallet,
+    setWallet
+  }), [customers, runners, bookings, authUser, authLoading, serviceUnavailable, toast, theme, wallet]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

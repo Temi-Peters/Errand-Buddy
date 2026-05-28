@@ -74,5 +74,8 @@ export const api = {
   customers: () => request('/customers'),
   adminOverview: () => request('/admin/overview'),
   runnerConnectLink: () => request('/payments/runner/connect', { method: 'POST' }),
-  runnerConnectStatus: () => request('/payments/runner/connect/status')
+  runnerConnectStatus: () => request('/payments/runner/connect/status'),
+  wallet: () => request('/wallet'),
+  walletTopUp: (amount) => request('/wallet/topup', { method: 'POST', body: { amount } }),
+  walletWithdraw: (amount) => request('/wallet/withdraw', { method: 'POST', body: { amount } })
 };

@@ -18,7 +18,7 @@ export default function ServiceCard({ service, selected, onClick }) {
           <Icon size={24} />
         </div>
         <h3 className="text-lg font-bold text-ink">{service}</h3>
-        <p className="mt-2 text-sm text-muted">Matched with vetted Leicester runners near you.</p>
+        <p className="mt-2 text-sm text-muted">Matched with a vetted local runner near you.</p>
       </Card>
     </button>
   );

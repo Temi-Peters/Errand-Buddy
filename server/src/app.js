@@ -9,6 +9,7 @@ import { authRouter } from './routes/auth.routes.js';
 import { bookingsRouter } from './routes/bookings.routes.js';
 import { customersRouter, runnersRouter } from './routes/profiles.routes.js';
 import { paymentsRouter } from './routes/payments.routes.js';
+import { walletRouter } from './routes/wallet.routes.js';
 import { handleWebhook } from './controllers/payments.controller.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 
@@ -74,6 +75,7 @@ app.use('/api/runners', runnersRouter);
 app.use('/api/customers', customersRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/payments', paymentsRouter);
+app.use('/api/wallet', walletRouter);
 
 app.use(notFound);
 app.use(errorHandler);

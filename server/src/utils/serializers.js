@@ -36,7 +36,7 @@ export const bookingStatusToClient = (status) => enumToTitle(status);
 
 export const bookingStatusFromClient = (status) => {
   const key = String(status || '').trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_');
-  const allowed = ['PENDING_PAYMENT', 'PENDING', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
+  const allowed = ['PENDING_PAYMENT', 'PENDING', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ON_HOLD'];
   return allowed.includes(key) ? key : null;
 };
 

@@ -30,9 +30,10 @@ const formatStatus = (status) => status.toLowerCase().replace(/_/g, ' ');
 const assertTransition = (from, to) => {
   const valid = {
     PENDING_PAYMENT: ['PENDING', 'CANCELLED'],
-    PENDING: ['ASSIGNED', 'CANCELLED'],
+    PENDING: ['ASSIGNED', 'CANCELLED', 'ON_HOLD'],
     ASSIGNED: ['IN_PROGRESS', 'CANCELLED'],
-    IN_PROGRESS: ['COMPLETED'],
+    IN_PROGRESS: ['COMPLETED', 'ON_HOLD'],
+    ON_HOLD: ['PENDING', 'IN_PROGRESS', 'CANCELLED'],
     COMPLETED: [],
     CANCELLED: []
   };

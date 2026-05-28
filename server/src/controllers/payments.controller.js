@@ -8,6 +8,7 @@ import {
   createTransfer,
   retrieveAccount
 } from '../services/stripe.service.js';
+import { creditWallet } from '../services/wallet.service.js';
 
 // ─── POST /api/payments/webhook ───────────────────────────────────────────────
 // Raw body is required — registered before express.json() in app.js
@@ -30,16 +31,21 @@ export const handleWebhook = async (req, res) => {
 
   try {
     switch (event.type) {
-      case 'payment_intent.succeeded':
-        await handlePaymentSucceeded(event.data.object);
+      case 'payment_intent.succeeded': {
+        const pi = event.data.object;
+        if (pi.metadata?.type === 'wallet_topup') {
+          await handleWalletTopUp(pi);
+        } else {
+          await handlePaymentSucceeded(pi);
+        }
         break;
+      }
 
       case 'payment_intent.payment_failed':
         await handlePaymentFailed(event.data.object);
         break;
 
       default:
-        // Unhandled event type — acknowledge and move on
         break;
     }
   } catch (err) {
@@ -48,6 +54,18 @@ export const handleWebhook = async (req, res) => {
   }
 
   res.json({ received: true });
+};
+
+const handleWalletTopUp = async (paymentIntent) => {
+  const customerId = paymentIntent.metadata?.customerId;
+  if (!customerId) {
+    console.warn(`[webhook] wallet_topup missing customerId on intent ${paymentIntent.id}`);
+    return;
+  }
+
+  const amountPounds = paymentIntent.amount / 100;
+  await creditWallet(customerId, amountPounds, paymentIntent.id);
+  console.log(`[webhook] Wallet credited £${amountPounds} for customer ${customerId}`);
 };
 
 const handlePaymentSucceeded = async (paymentIntent) => {

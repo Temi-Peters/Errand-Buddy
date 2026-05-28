@@ -25,7 +25,7 @@ export default function Layout({ children }) {
                 ErrandBuddy
               </Link>
               <p className="mt-3 max-w-xs text-sm leading-6 text-muted">
-                Trusted local errand support across Leicester. Vetted runners, clear pricing, real updates.
+                Trusted local errand support, wherever you are. Vetted runners, clear pricing, real updates.
               </p>
             </div>
             {footerLinks.map(({ heading, links }) => (

@@ -36,7 +36,7 @@ export default function Book() {
   const [confirmed, setConfirmed] = useState(null);
   const [clientSecret, setClientSecret] = useState(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
-  const { authUser, customers, showToast } = useApp();
+  const { authUser, customers, showToast, wallet, fetchWallet } = useApp();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -61,6 +61,13 @@ export default function Book() {
   };
 
   const next = () => validate() && setStep((current) => current + 1);
+
+  // Fetch wallet balance when reaching step 5 so we can show low-balance warning
+  useEffect(() => {
+    if (step === 5 && authUser?.role === 'customer') {
+      fetchWallet().catch(() => {});
+    }
+  }, [step]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // When the user reaches step 5, create the booking + Stripe PaymentIntent
   useEffect(() => {
@@ -147,6 +154,17 @@ export default function Book() {
               <p className="mt-1 text-2xl font-black">£{form.price}</p>
             </div>
           </div>
+          <div className={`rounded-xl border p-3 text-sm ${wallet.balance < 0 ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-900/20' : 'border-surface-hi bg-surface-hi'}`}>
+            <span className="font-semibold text-muted">Wallet balance: </span>
+            <span className={`font-bold ${wallet.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-ink'}`}>£{wallet.balance.toFixed(2)}</span>
+            {wallet.balance < 0 && (
+              <p className="mt-1 text-red-600 dark:text-red-400">Your wallet balance is negative. Top it up in your dashboard after booking.</p>
+            )}
+            {wallet.balance >= 0 && wallet.balance < 20 && (
+              <p className="mt-1 text-muted">Low balance — consider topping up your wallet before your runner shops for you.</p>
+            )}
+          </div>
+
           {paymentLoading && (
             <p className="text-sm text-muted">Preparing payment…</p>
           )}
