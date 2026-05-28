@@ -55,7 +55,7 @@ const fmtY = (v) => Math.abs(v) >= 1000 ? `£${(v / 1000).toFixed(1)}k` : `£${v
 // ─── Slider component ─────────────────────────────────────────────────────────
 function Slider({ label, value, display, min, max, step, onChange }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 rounded-xl border border-stone-200 p-4 dark:border-transparent">
       <div className="flex items-baseline justify-between">
         <span className="text-sm font-semibold text-muted">{label}</span>
         <span className="text-lg font-black text-ink">{display}</span>
