@@ -232,11 +232,11 @@ export default function RevenueModel() {
           <p className="mt-2 text-3xl font-black text-ink">{fmt(netBlended)}</p>
           <p className="mt-1 text-xs text-muted">{groceryMix}% grocery · {100 - groceryMix}% prescription</p>
         </Card>
-        <Card className="bg-secondary !text-white">
-          <p className="text-sm font-bold text-white/70">Base case — month 6 total</p>
+        <div className="rounded-2xl bg-emerald-500 p-5 shadow-soft">
+          <p className="text-sm font-bold text-emerald-100">Base case — month 6 total</p>
           <p className="mt-2 text-3xl font-black text-white">{fmt(m6Total)}</p>
-          <p className="mt-1 text-xs text-white/70">{fmt(m6OneOff)} one-off · {fmt(m6Sub)} subscriptions</p>
-        </Card>
+          <p className="mt-1 text-xs text-emerald-100">{fmt(m6OneOff)} one-off · {fmt(m6Sub)} subscriptions</p>
+        </div>
       </div>
 
       {/* Section 3 — Projection line chart */}
