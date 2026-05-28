@@ -2,6 +2,7 @@ import {
   acceptBooking,
   completeBooking,
   createBooking,
+  getBookingClientSecret,
   listBookings,
   reviewBooking,
   startBooking,
@@ -60,6 +61,14 @@ export const complete = async (req, res, next) => {
 export const review = async (req, res, next) => {
   try {
     res.status(201).json({ booking: await reviewBooking(req.user, req.params.id, req.body) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resumePayment = async (req, res, next) => {
+  try {
+    res.json(await getBookingClientSecret(req.user, req.params.id));
   } catch (error) {
     next(error);
   }

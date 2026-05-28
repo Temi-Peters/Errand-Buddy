@@ -32,6 +32,11 @@ export default function CustomerDashboard() {
   const [profileForm, setProfileForm] = useState(null);
   const [profileSaving, setProfileSaving] = useState(false);
 
+  // Pay-now state (for PENDING_PAYMENT bookings)
+  const [payNowBooking, setPayNowBooking] = useState(null);
+  const [payNowSecret, setPayNowSecret] = useState(null);
+  const [payNowLoading, setPayNowLoading] = useState(false);
+
   // Wallet state
   const [walletLoading, setWalletLoading] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState(20);
@@ -76,6 +81,22 @@ export default function CustomerDashboard() {
     setRatingBooking(null);
     setReview('');
   };
+
+  const openPayNow = async (booking) => {
+    setPayNowBooking(booking);
+    setPayNowLoading(true);
+    try {
+      const { clientSecret } = await api.resumePayment(booking.id);
+      setPayNowSecret(clientSecret);
+    } catch (err) {
+      showToast(err.message || 'Could not load payment', 'error');
+      setPayNowBooking(null);
+    } finally {
+      setPayNowLoading(false);
+    }
+  };
+
+  const closePayNow = () => { setPayNowBooking(null); setPayNowSecret(null); };
 
   useEffect(() => {
     if (activeTab !== 'Wallet') return;
@@ -147,6 +168,9 @@ export default function CustomerDashboard() {
       runner={runners.find((r) => r.id === booking.runnerId)}
       actions={(
         <>
+          {booking.status === 'Pending Payment' && (
+            <Button onClick={() => openPayNow(booking)}>Pay now</Button>
+          )}
           {booking.runnerId && ['Assigned', 'In Progress'].includes(booking.status) && (
             <Button variant="outline" onClick={() => openMessages(booking)}><MessageSquare size={16} /> Message runner</Button>
           )}
@@ -476,6 +500,37 @@ export default function CustomerDashboard() {
             </div>
           </Card>
         </div>
+      )}
+
+      {/* ── Pay now modal ────────────────────────────────────────────────── */}
+      {payNowBooking && (
+        <Modal title="Complete payment" onClose={closePayNow}>
+          <div className="space-y-4">
+            <div className="rounded-xl bg-surface-hi p-4">
+              <p className="font-bold text-ink">{payNowBooking.serviceType}</p>
+              <p className="text-sm text-muted">{payNowBooking.date} at {payNowBooking.time}</p>
+              <p className="mt-1 text-2xl font-black text-ink">£{payNowBooking.price}</p>
+            </div>
+            {payNowLoading && <p className="text-sm text-muted">Loading payment…</p>}
+            {payNowSecret && (
+              <Elements
+                stripe={stripePromise}
+                options={{
+                  clientSecret: payNowSecret,
+                  appearance: { theme: 'stripe', variables: { fontFamily: '"Plus Jakarta Sans", sans-serif', borderRadius: '8px', colorPrimary: '#1C1917' } }
+                }}
+              >
+                <CheckoutForm
+                  price={payNowBooking.price}
+                  onSuccess={() => {
+                    showToast('Payment confirmed!');
+                    closePayNow();
+                  }}
+                />
+              </Elements>
+            )}
+          </div>
+        </Modal>
       )}
 
       {/* ── Withdraw modal ───────────────────────────────────────────────── */}

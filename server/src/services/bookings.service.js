@@ -1,7 +1,7 @@
 import { prisma } from '../config/prisma.js';
 import { env } from '../config/env.js';
 import { ApiError } from '../middleware/errorHandler.js';
-import { createPaymentIntent, createTransfer, updatePaymentIntentMetadata } from './stripe.service.js';
+import { createPaymentIntent, createTransfer, retrievePaymentIntent, updatePaymentIntentMetadata } from './stripe.service.js';
 import {
   bookingStatusFromClient,
   bookingToClient,
@@ -290,6 +290,25 @@ const transitionRunnerBooking = async (user, id, requiredStatus, nextStatus) => 
   }
 
   return bookingToClient(updated);
+};
+
+export const getBookingClientSecret = async (user, id) => {
+  if (user.role !== 'CUSTOMER' || !user.customerProfile) {
+    throw new ApiError(403, 'Customers only');
+  }
+
+  const booking = await prisma.booking.findUnique({
+    where: { id },
+    include: { payment: true }
+  });
+
+  if (!booking) throw new ApiError(404, 'Booking not found');
+  if (booking.customerId !== user.customerProfile.id) throw new ApiError(403, 'Not your booking');
+  if (booking.status !== 'PENDING_PAYMENT') throw new ApiError(400, 'Payment already completed for this booking');
+  if (!booking.payment?.stripePaymentIntentId) throw new ApiError(400, 'No payment intent found for this booking');
+
+  const intent = await retrievePaymentIntent(booking.payment.stripePaymentIntentId);
+  return { clientSecret: intent.client_secret, price: Number(booking.price) };
 };
 
 export const reviewBooking = async (user, id, data) => {

@@ -66,6 +66,7 @@ export const api = {
   startBooking: (id) => request(`/bookings/${id}/start`, { method: 'POST' }),
   completeBooking: (id) => request(`/bookings/${id}/complete`, { method: 'POST' }),
   reviewBooking: (id, data) => request(`/bookings/${id}/review`, { method: 'POST', body: data }),
+  resumePayment: (id) => request(`/bookings/${id}/resume-payment`, { method: 'POST' }),
   messages: (id) => request(`/bookings/${id}/messages`),
   sendMessage: (id, data) => request(`/bookings/${id}/messages`, { method: 'POST', body: data }),
   runners: () => request('/runners'),
