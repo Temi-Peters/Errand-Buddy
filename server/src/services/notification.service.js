@@ -159,6 +159,47 @@ export const notifyTaskCompleted = (booking) => {
   });
 };
 
+export const notifyCustomerWelcome = (user) => {
+  const email = user?.email;
+  const name = user?.name || 'there';
+  if (!email) return;
+
+  send({
+    to: email,
+    subject: 'Welcome to ErrandBuddy',
+    html: layout(`
+      ${h1(`Welcome, ${name.split(' ')[0]}.`)}
+      ${p(`You're all set. Book your first errand in minutes — a vetted local runner will handle the rest.`)}
+      ${detailTable(`
+        ${detail('Grocery Shopping', 'from £25')}
+        ${detail('Prescription Pickup', 'from £25')}
+      `)}
+      ${p(`Top up your wallet before your first errand so your runner can cover the cost of any goods on your behalf.`)}
+      ${btn('Book your first errand', `${SITE}/book`)}
+    `)
+  });
+};
+
+export const notifyWalletLow = (user, balance) => {
+  const email = user?.email;
+  const name = user?.name || 'there';
+  if (!email) return;
+
+  const isNegative = balance < 0;
+
+  send({
+    to: email,
+    subject: isNegative ? 'Action needed — wallet balance is negative' : 'Low wallet balance — ErrandBuddy',
+    html: layout(`
+      ${h1(isNegative ? `Your wallet is in the negative, ${name.split(' ')[0]}.` : `Your wallet balance is low, ${name.split(' ')[0]}.`)}
+      ${isNegative
+        ? p(`Your current balance is <strong style="color:#DC2626;">−£${Math.abs(balance).toFixed(2)}</strong>. New bookings are paused until you top up.`)
+        : p(`Your current wallet balance is <strong>£${balance.toFixed(2)}</strong>. Top up before your next errand so your runner can cover the cost of goods.`)}
+      ${btn('Top up wallet', `${SITE}/customer/dashboard`)}
+    `)
+  });
+};
+
 export const notifyRunnerApplicationSubmitted = (user) => {
   const email = user?.email;
   const name = user?.name || 'there';

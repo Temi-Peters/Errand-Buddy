@@ -3,7 +3,7 @@ import { ApiError } from '../middleware/errorHandler.js';
 import { comparePassword, hashPassword } from '../utils/password.js';
 import { signToken } from '../utils/jwt.js';
 import { userToClient } from '../utils/serializers.js';
-import { notifyRunnerApplicationSubmitted } from './notification.service.js';
+import { notifyCustomerWelcome, notifyRunnerApplicationSubmitted } from './notification.service.js';
 
 const includeProfiles = { customerProfile: true, runnerProfile: true };
 
@@ -56,6 +56,10 @@ export const registerUser = async (data) => {
 
   if (user.runnerProfile) {
     notifyRunnerApplicationSubmitted(user);
+  }
+
+  if (user.customerProfile) {
+    notifyCustomerWelcome(user);
   }
 
   return { token: signToken(user), user: userToClient(user) };

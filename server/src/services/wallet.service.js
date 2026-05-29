@@ -1,6 +1,9 @@
 import { prisma } from '../config/prisma.js';
 import { ApiError } from '../middleware/errorHandler.js';
 import { createPaymentIntent } from './stripe.service.js';
+import { notifyWalletLow } from './notification.service.js';
+
+const LOW_BALANCE_THRESHOLD = 10;
 
 export const getWallet = async (customerId) => {
   const profile = await prisma.customerProfile.findUnique({
@@ -83,8 +86,15 @@ export const withdrawFromWallet = async (customerId, amount) => {
     })
   ]);
 
+  const newBalance = Number(updated.walletBalance);
+
+  if (newBalance < LOW_BALANCE_THRESHOLD) {
+    const user = await prisma.user.findFirst({ where: { customerProfile: { id: customerId } } });
+    if (user) notifyWalletLow(user, newBalance);
+  }
+
   return {
-    newBalance: Number(updated.walletBalance),
+    newBalance,
     transaction: txToClient(tx)
   };
 };
