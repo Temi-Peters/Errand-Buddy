@@ -16,6 +16,7 @@ import Privacy from './pages/Privacy';
 import Contact from './pages/Contact';
 import Welcome from './pages/Welcome';
 import RevenueModel from './pages/RevenueModel';
+import Coverage from './pages/Coverage';
 import { useApp } from './context/AppContext';
 
 function ProtectedRoute({ role, children }) {
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/coverage" element={<Coverage />} />
         <Route path="/customer/dashboard" element={<ProtectedRoute role="customer"><CustomerDashboard /></ProtectedRoute>} />
         <Route path="/runner/dashboard" element={<ProtectedRoute role="runner"><RunnerDashboard /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute role="admin"><Admin /></ProtectedRoute>} />

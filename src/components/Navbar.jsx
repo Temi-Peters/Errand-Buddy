@@ -14,6 +14,7 @@ export default function Navbar() {
     ['Services', '/services'],
     ['Pricing', '/pricing'],
     ['How it works', '/how-it-works'],
+    ['Coverage', '/coverage'],
     ...(authUser ? [['Dashboard', dashboard]] : []),
   ];
 
