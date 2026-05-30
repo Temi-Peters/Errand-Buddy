@@ -13,6 +13,7 @@ export const AppProvider = ({ children }) => {
   const [toast, setToast] = useState(null);
   const [theme, setTheme] = useState(() => localStorage.getItem('eb-theme') || 'light');
   const [wallet, setWallet] = useState({ balance: 0, transactions: [] });
+  const [templates, setTemplates] = useState([]);
 
   const toggleTheme = () => {
     setTheme(prev => {
@@ -247,6 +248,40 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const fetchTemplates = async () => {
+    try {
+      const response = await api.templates();
+      setTemplates(response.templates);
+      return response.templates;
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  };
+
+  const saveTemplate = async (data) => {
+    try {
+      const response = await api.createTemplate(data);
+      setTemplates((prev) => [response.template, ...prev]);
+      showToast('Template saved');
+      return response.template;
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  };
+
+  const removeTemplate = async (id) => {
+    try {
+      await api.deleteTemplate(id);
+      setTemplates((prev) => prev.filter((t) => t.id !== id));
+      showToast('Template deleted');
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  };
+
   const fetchWallet = async () => {
     try {
       const response = await api.wallet();
@@ -293,6 +328,7 @@ export const AppProvider = ({ children }) => {
     toast,
     theme,
     wallet,
+    templates,
     showToast,
     toggleTheme,
     login,
@@ -307,8 +343,11 @@ export const AppProvider = ({ children }) => {
     updateRunnerStatus,
     updateProfile,
     fetchWallet,
-    setWallet
-  }), [customers, runners, bookings, authUser, authLoading, serviceUnavailable, toast, theme, wallet]);
+    setWallet,
+    fetchTemplates,
+    saveTemplate,
+    removeTemplate
+  }), [customers, runners, bookings, authUser, authLoading, serviceUnavailable, toast, theme, wallet, templates]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

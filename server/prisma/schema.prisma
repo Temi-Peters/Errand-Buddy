@@ -81,12 +81,13 @@ model CustomerProfile {
   address            String
   phone              String
   postcodeArea       String
-  walletBalance      Decimal             @default(0) @db.Decimal(10, 2)
+  walletBalance      Decimal              @default(0) @db.Decimal(10, 2)
   bookings           Booking[]
   reviews            Review[]
   walletTransactions WalletTransaction[]
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
+  bookingTemplates   BookingTemplate[]
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
 }
 
 model RunnerProfile {
@@ -188,6 +189,26 @@ model Message {
   @@index([bookingId])
   @@index([senderId])
   @@index([receiverId])
+}
+
+model BookingTemplate {
+  id           String          @id @default(cuid())
+  customerId   String
+  customer     CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  name         String
+  serviceType  ServiceType
+  bookingType  BookingType
+  subscription String?
+  time         String
+  instructions String
+  address      String
+  contactPhone String
+  postcodeArea String
+  price        Decimal         @db.Decimal(10, 2)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([customerId])
 }
 
 model WalletTransaction {

@@ -1,5 +1,5 @@
 import { Elements } from '@stripe/react-stripe-js';
-import { CalendarCheck, Clock, MessageSquare, Pencil, Plus, Star, WalletCards } from 'lucide-react';
+import { Bookmark, CalendarCheck, Clock, MessageSquare, Pencil, Plus, Star, Trash2, WalletCards } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
@@ -14,12 +14,12 @@ import { useApp } from '../context/AppContext';
 import { areas } from '../data/options';
 import { stripePromise } from '../lib/stripe';
 
-const tabs = ['Overview', 'My Bookings', 'Wallet', 'Messages', 'Account'];
+const tabs = ['Overview', 'My Bookings', 'Templates', 'Wallet', 'Messages', 'Account'];
 
 const TOP_UP_AMOUNTS = [10, 20, 50, 100];
 
 export default function CustomerDashboard() {
-  const { authUser, bookings, runners, customers, updateBooking, fetchMessages, sendMessage, updateProfile, showToast, wallet, fetchWallet, setWallet } = useApp();
+  const { authUser, bookings, runners, customers, updateBooking, fetchMessages, sendMessage, updateProfile, showToast, wallet, fetchWallet, setWallet, templates, fetchTemplates, saveTemplate, removeTemplate } = useApp();
   const [activeTab, setActiveTab] = useState('Overview');
   const [ratingBooking, setRatingBooking] = useState(null);
   const [contact, setContact] = useState(null);
@@ -45,6 +45,12 @@ export default function CustomerDashboard() {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+
+  // Template state
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [saveTemplateBooking, setSaveTemplateBooking] = useState(null);
+  const [templateName, setTemplateName] = useState('');
+  const [saveTemplateLoading, setSaveTemplateLoading] = useState(false);
 
   const mine = bookings.filter((b) => b.customerId === authUser.id);
   const grouped = {
@@ -98,10 +104,44 @@ export default function CustomerDashboard() {
 
   const closePayNow = () => { setPayNowBooking(null); setPayNowSecret(null); };
 
+  const openSaveTemplate = (booking) => {
+    setSaveTemplateBooking(booking);
+    setTemplateName(`${booking.serviceType} — ${booking.postcodeArea}`);
+  };
+
+  const submitSaveTemplate = async () => {
+    setSaveTemplateLoading(true);
+    try {
+      await saveTemplate({
+        name: templateName,
+        serviceType: saveTemplateBooking.serviceType,
+        bookingType: saveTemplateBooking.bookingType,
+        subscription: saveTemplateBooking.subscription,
+        time: saveTemplateBooking.time,
+        instructions: saveTemplateBooking.instructions,
+        address: saveTemplateBooking.address,
+        contactPhone: saveTemplateBooking.contactPhone,
+        postcodeArea: saveTemplateBooking.postcodeArea,
+        price: saveTemplateBooking.price
+      });
+      setSaveTemplateBooking(null);
+    } catch {
+      // toast shown by context
+    } finally {
+      setSaveTemplateLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab !== 'Wallet') return;
     setWalletLoading(true);
     fetchWallet().finally(() => setWalletLoading(false));
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (activeTab !== 'Templates') return;
+    setTemplatesLoading(true);
+    fetchTemplates().finally(() => setTemplatesLoading(false));
   }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -181,6 +221,11 @@ export default function CustomerDashboard() {
             booking.rating
               ? <p className="text-sm font-semibold text-secondary">⭐ {booking.rating.stars} — {booking.rating.review}</p>
               : <Button variant="outline" onClick={() => setRatingBooking(booking)}>Rate service</Button>
+          )}
+          {['Completed', 'Pending', 'Assigned', 'In Progress'].includes(booking.status) && (
+            <Button variant="outline" onClick={() => openSaveTemplate(booking)}>
+              <Bookmark size={14} /> Save as template
+            </Button>
           )}
         </>
       )}
@@ -289,6 +334,57 @@ export default function CustomerDashboard() {
               <p className="font-bold text-muted">No bookings yet</p>
               <Button as={Link} to="/book" className="mt-4"><Plus size={16} /> Book an errand</Button>
             </Card>
+          )}
+        </div>
+      )}
+
+      {/* ── Templates ────────────────────────────────────────────────────── */}
+      {activeTab === 'Templates' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted">Book any errand again in seconds using a saved template.</p>
+          </div>
+
+          {templatesLoading && <p className="text-sm text-muted">Loading…</p>}
+
+          {!templatesLoading && templates.length === 0 && (
+            <Card className="border-dashed py-10 text-center">
+              <Bookmark className="mx-auto text-muted" size={32} />
+              <p className="mt-3 font-bold text-muted">No saved templates yet</p>
+              <p className="mt-1 text-sm text-muted">On any booking, tap <strong>Save as template</strong> to save it here for quick re-booking.</p>
+            </Card>
+          )}
+
+          {!templatesLoading && templates.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {templates.map((template) => (
+                <Card key={template.id} className="space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-bold text-ink">{template.name}</p>
+                      <p className="text-sm text-muted">{template.serviceType} · {template.bookingType}</p>
+                    </div>
+                    <button
+                      onClick={() => removeTemplate(template.id)}
+                      className="shrink-0 rounded-lg p-1.5 text-muted transition hover:bg-surface-hi hover:text-red-500"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                  <div className="space-y-1 text-sm text-muted">
+                    <p><span className="font-semibold">Time:</span> {template.time}</p>
+                    <p><span className="font-semibold">Area:</span> {template.postcodeArea}</p>
+                    <p><span className="font-semibold">Address:</span> {template.address}</p>
+                    {template.instructions && (
+                      <p className="line-clamp-2"><span className="font-semibold">Notes:</span> {template.instructions}</p>
+                    )}
+                  </div>
+                  <Button as={Link} to={`/book?template=${template.id}`} className="w-full">
+                    <Plus size={14} /> Book again · £{template.price}
+                  </Button>
+                </Card>
+              ))}
+            </div>
           )}
         </div>
       )}
@@ -500,6 +596,26 @@ export default function CustomerDashboard() {
             </div>
           </Card>
         </div>
+      )}
+
+      {/* ── Save template modal ──────────────────────────────────────────── */}
+      {saveTemplateBooking && (
+        <Modal title="Save as template" onClose={() => setSaveTemplateBooking(null)}>
+          <div className="space-y-4">
+            <p className="text-sm text-muted">Give this template a name so you can find it easily.</p>
+            <input
+              type="text"
+              className="focus-ring min-h-11 w-full rounded-lg border border-surface-hi px-3"
+              placeholder="e.g. Weekly Tesco run"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              autoFocus
+            />
+            <Button className="w-full" loading={saveTemplateLoading} disabled={!templateName.trim()} onClick={submitSaveTemplate}>
+              Save template
+            </Button>
+          </div>
+        </Modal>
       )}
 
       {/* ── Pay now modal ────────────────────────────────────────────────── */}

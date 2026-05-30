@@ -78,5 +78,9 @@ export const api = {
   runnerConnectStatus: () => request('/payments/runner/connect/status'),
   wallet: () => request('/wallet'),
   walletTopUp: (amount) => request('/wallet/topup', { method: 'POST', body: { amount } }),
-  walletWithdraw: (amount) => request('/wallet/withdraw', { method: 'POST', body: { amount } })
+  walletWithdraw: (amount) => request('/wallet/withdraw', { method: 'POST', body: { amount } }),
+  templates: () => request('/templates'),
+  getTemplate: (id) => request(`/templates/${id}`),
+  createTemplate: (data) => request('/templates', { method: 'POST', body: data }),
+  deleteTemplate: (id) => request(`/templates/${id}`, { method: 'DELETE' })
 };

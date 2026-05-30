@@ -1,6 +1,6 @@
 import { Elements } from '@stripe/react-stripe-js';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -38,11 +38,36 @@ export default function Book() {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const { authUser, customers, showToast, wallet, fetchWallet } = useApp();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     if (!authUser) navigate('/login', { state: { from: '/book' }, replace: true });
     if (authUser && authUser.role !== 'customer') navigate('/', { replace: true });
   }, [authUser, navigate]);
+
+  // Pre-fill from a saved template if ?template=<id> is in the URL
+  useEffect(() => {
+    const templateId = searchParams.get('template');
+    if (!templateId || !authUser) return;
+
+    api.getTemplate(templateId)
+      .then(({ template }) => {
+        setForm({
+          serviceType: template.serviceType,
+          bookingType: template.bookingType.includes('Weekly') ? 'Weekly subscription' : 'One-off task',
+          subscription: template.subscription || '1 task/week',
+          price: template.price,
+          date: '',
+          time: template.time,
+          instructions: template.instructions,
+          address: template.address,
+          contactPhone: template.contactPhone,
+          postcodeArea: template.postcodeArea
+        });
+        setStep(3);
+      })
+      .catch(() => {}); // silently ignore missing/invalid templates
+  }, [searchParams, authUser]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const update = (field, value) => setForm((current) => ({ ...current, [field]: value }));
 
