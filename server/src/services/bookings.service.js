@@ -13,6 +13,7 @@ import { chargeForGoods } from './wallet.service.js';
 import {
   notifyBookingAssigned,
   notifyBookingCreated,
+  notifyGoodsCharged,
   notifyReviewSubmitted,
   notifyTaskCompleted,
   notifyTaskStarted
@@ -111,6 +112,20 @@ export const createBooking = async (user, data) => {
     await assertActiveCarerLink(user.customerProfile.id, onBehalfOf);
     customerId = onBehalfOf;
     createdByCarerId = user.customerProfile.id;
+  }
+
+  // Gate new bookings on the payer's wallet: a negative balance (run up by goods
+  // charges) must be cleared before booking again. The payer is the carer for
+  // carer-placed bookings, otherwise the customer.
+  const payerId = createdByCarerId || customerId;
+  const payer = await prisma.customerProfile.findUnique({
+    where: { id: payerId },
+    select: { walletBalance: true }
+  });
+  if (payer && Number(payer.walletBalance) < 0) {
+    throw new ApiError(400, createdByCarerId
+      ? `Your wallet balance is negative (−£${Math.abs(Number(payer.walletBalance)).toFixed(2)}). Please top up before booking on someone's behalf.`
+      : `Your wallet balance is negative (−£${Math.abs(Number(payer.walletBalance)).toFixed(2)}). Please top up your wallet before booking.`);
   }
 
   const fee = platformFee(price);
@@ -265,12 +280,13 @@ export const completeBooking = async (user, id, goodsCostInput = 0) => {
 
   // Charge the payer for the cost of goods. The payer is the carer when the booking
   // was placed on a client's behalf, otherwise the customer themselves.
+  let chargeResult = null;
   if (goodsCost > 0) {
     try {
       const booking = await prisma.booking.findUnique({ where: { id } });
       if (booking && !booking.goodsChargedAt) {
         const payerId = booking.createdByCarerId || booking.customerId;
-        await chargeForGoods(payerId, goodsCost, id, `Cost of goods — ${serviceTypeToClient(booking.serviceType)}`);
+        chargeResult = await chargeForGoods(payerId, goodsCost, id, `Cost of goods — ${serviceTypeToClient(booking.serviceType)}`);
         await prisma.booking.update({
           where: { id },
           data: { goodsCost, goodsChargedAt: new Date() }
@@ -322,6 +338,20 @@ export const completeBooking = async (user, id, goodsCostInput = 0) => {
 
   if (goodsCost > 0) {
     const fresh = await prisma.booking.findUnique({ where: { id }, include: bookingInclude });
+
+    // Receipt to whoever was charged — the carer for carer-placed bookings, else the customer
+    if (chargeResult) {
+      const payer = fresh.createdByCarer || fresh.customer;
+      notifyGoodsCharged({
+        to: payer?.user?.email,
+        name: payer?.user?.name || 'there',
+        serviceLabel: serviceTypeToClient(fresh.serviceType),
+        amount: goodsCost,
+        newBalance: chargeResult.newBalance,
+        forClientName: fresh.createdByCarerId ? fresh.customer?.user?.name : null
+      });
+    }
+
     return bookingToClient(fresh);
   }
 
