@@ -97,6 +97,7 @@ export const bookingToClient = (booking) => ({
   address: booking.address,
   contactPhone: booking.contactPhone,
   postcodeArea: booking.postcodeArea,
+  goodsCost: booking.goodsCost != null ? Number(booking.goodsCost) : null,
   createdByCarerId: booking.createdByCarerId || null,
   createdByCarer: booking.createdByCarer ? {
     id: booking.createdByCarer.id,

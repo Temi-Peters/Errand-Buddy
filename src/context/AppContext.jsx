@@ -204,9 +204,9 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const completeRunnerTask = async (bookingId, runnerId) => {
+  const completeRunnerTask = async (bookingId, runnerId, goodsCost = 0) => {
     try {
-      const response = await api.completeBooking(bookingId);
+      const response = await api.completeBooking(bookingId, goodsCost);
       replaceBooking(response.booking);
       setRunners((current) => current.map((runner) => runner.id === runnerId ? { ...runner, completedTasks: runner.completedTasks + 1 } : runner));
       return response.booking;

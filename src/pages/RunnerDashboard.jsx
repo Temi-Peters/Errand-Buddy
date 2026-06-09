@@ -24,7 +24,24 @@ export default function RunnerDashboard() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [connectStatus, setConnectStatus] = useState(null);
   const [connectLoading, setConnectLoading] = useState(false);
+  const [completingBooking, setCompletingBooking] = useState(null);
+  const [goodsCost, setGoodsCost] = useState('');
+  const [completeLoading, setCompleteLoading] = useState(false);
   const runner = runners.find((item) => item.id === authUser.id);
+
+  const submitComplete = async () => {
+    if (!completingBooking) return;
+    setCompleteLoading(true);
+    try {
+      await completeRunnerTask(completingBooking.id, runner.id, Number(goodsCost) || 0);
+      setCompletingBooking(null);
+      setGoodsCost('');
+    } catch {
+      /* toast shown by context */
+    } finally {
+      setCompleteLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (activeTab !== 'Profile' || connectStatus !== null) return;
@@ -119,7 +136,7 @@ export default function RunnerDashboard() {
           <>
             <div className="w-full text-sm text-muted"><p><strong>Address:</strong> {booking.address}</p><p><strong>Phone:</strong> {booking.contactPhone}</p><p><strong>Instructions:</strong> {booking.instructions}</p></div>
             {booking.status === 'Assigned' && <Button onClick={() => updateBooking(booking.id, { status: 'In Progress' })}>Start Task</Button>}
-            {booking.status === 'In Progress' && <Button variant="secondary" onClick={() => completeRunnerTask(booking.id, runner.id)}>Mark Complete</Button>}
+            {booking.status === 'In Progress' && <Button variant="secondary" onClick={() => { setCompletingBooking(booking); setGoodsCost(''); }}>Mark Complete</Button>}
             {booking.status === 'In Progress' && <Button variant="outline" onClick={() => setContact({ booking, customer })}><MessageSquare size={18} /> Contact Customer</Button>}
             {booking.status === 'Completed' && <p className="font-semibold text-secondary">Completed</p>}
           </>
@@ -323,6 +340,37 @@ export default function RunnerDashboard() {
         const fromMe = message.senderId === authUser.userId;
         return <div key={message.id} className={`rounded-lg p-3 ${fromMe ? 'ml-8 bg-primary text-white' : 'mr-8 bg-surface text-ink'}`}><p className="font-bold">{fromMe ? 'You' : message.senderName}</p><p>{message.body}</p></div>;
       }) : <p className="text-muted">No messages yet.</p>}</div><textarea className="focus-ring min-h-24 w-full rounded-lg border border-surface-hi p-3" placeholder="Type a message" value={messageBody} onChange={(event) => setMessageBody(event.target.value)} /><Button className="w-full" loading={messageLoading} disabled={!messageBody.trim()} onClick={submitMessage}>Send message</Button></div></Modal>}
+
+      {completingBooking && (
+        <Modal title="Complete task" onClose={() => { setCompletingBooking(null); setGoodsCost(''); }}>
+          <div className="space-y-4">
+            <div className="rounded-xl bg-surface-hi p-4">
+              <p className="font-bold text-ink">{completingBooking.serviceType}</p>
+              <p className="text-sm text-muted">{completingBooking.date} at {completingBooking.time}</p>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-bold text-ink">Cost of goods you purchased</label>
+              <p className="mb-2 text-xs text-muted">Enter what you spent on the customer's behalf (e.g. groceries, prescription). Enter 0 if there were none. You'll be reimbursed this amount on top of your payout.</p>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-bold text-muted">£</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="focus-ring min-h-11 w-full rounded-lg border border-surface-hi px-3"
+                  placeholder="0.00"
+                  value={goodsCost}
+                  onChange={(e) => setGoodsCost(e.target.value)}
+                  autoFocus
+                />
+              </div>
+            </div>
+            <Button className="w-full" loading={completeLoading} onClick={submitComplete}>
+              {Number(goodsCost) > 0 ? `Complete & charge £${Number(goodsCost).toFixed(2)}` : 'Mark complete'}
+            </Button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

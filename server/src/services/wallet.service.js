@@ -99,6 +99,38 @@ export const withdrawFromWallet = async (customerId, amount) => {
   };
 };
 
+// Debit a customer's wallet for the cost of goods a runner purchased on a booking.
+// The balance is allowed to go negative (overdraft); the existing low-balance email
+// fires so the payer knows to top up. Used by the booking completion flow.
+export const chargeForGoods = async (customerId, amount, bookingId, description) => {
+  if (!amount || amount <= 0) throw new ApiError(400, 'Goods cost must be greater than 0');
+
+  const [updated, tx] = await prisma.$transaction([
+    prisma.customerProfile.update({
+      where: { id: customerId },
+      data: { walletBalance: { decrement: amount } }
+    }),
+    prisma.walletTransaction.create({
+      data: {
+        customerId,
+        type: 'CHARGE',
+        amount,
+        description: description || 'Cost of goods',
+        bookingId
+      }
+    })
+  ]);
+
+  const newBalance = Number(updated.walletBalance);
+
+  if (newBalance < LOW_BALANCE_THRESHOLD) {
+    const user = await prisma.user.findFirst({ where: { customerProfile: { id: customerId } } });
+    if (user) notifyWalletLow(user, newBalance);
+  }
+
+  return { newBalance, transaction: txToClient(tx) };
+};
+
 const txToClient = (tx) => ({
   id: tx.id,
   type: tx.type.toLowerCase(),

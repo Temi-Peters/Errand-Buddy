@@ -52,7 +52,7 @@ export const start = async (req, res, next) => {
 
 export const complete = async (req, res, next) => {
   try {
-    res.json({ booking: await completeBooking(req.user, req.params.id) });
+    res.json({ booking: await completeBooking(req.user, req.params.id, req.body?.goodsCost) });
   } catch (error) {
     next(error);
   }
