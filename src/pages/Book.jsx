@@ -36,9 +36,28 @@ export default function Book() {
   const [confirmed, setConfirmed] = useState(null);
   const [clientSecret, setClientSecret] = useState(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
-  const { authUser, customers, showToast, wallet, fetchWallet } = useApp();
+  const { authUser, customers, showToast, wallet, fetchWallet, fetchCarerLinks } = useApp();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const onBehalfOf = searchParams.get('onBehalfOf') || null;
+  const [client, setClient] = useState(null);
+
+  // When booking on behalf of a client, resolve the client from the carer's active links.
+  // If no active link is found, the carer isn't authorised — bounce them back.
+  useEffect(() => {
+    if (!onBehalfOf || !authUser) return;
+    fetchCarerLinks()
+      .then(({ clients }) => {
+        const match = (clients || []).find((link) => link.counterpart?.id === onBehalfOf);
+        if (!match) {
+          showToast('You are not an active carer for this person.', 'error');
+          navigate('/customer/dashboard', { replace: true });
+          return;
+        }
+        setClient(match.counterpart);
+      })
+      .catch(() => {});
+  }, [onBehalfOf, authUser]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!authUser) navigate('/login', { state: { from: '/book' }, replace: true });
@@ -116,7 +135,8 @@ export default function Book() {
       instructions: form.instructions,
       address: form.address,
       contactPhone: form.contactPhone,
-      postcodeArea: form.postcodeArea
+      postcodeArea: form.postcodeArea,
+      ...(onBehalfOf ? { onBehalfOf } : {})
     })
       .then(({ booking, clientSecret: secret }) => {
         setConfirmed(booking);
@@ -143,6 +163,13 @@ export default function Book() {
         </div>
         <p className="mt-2 text-sm font-semibold text-muted">Step {step} of 6</p>
       </div>
+
+      {client && (
+        <div className="mb-6 rounded-xl border border-primary/30 bg-primary/5 p-4">
+          <p className="text-sm font-semibold text-ink">Booking on behalf of {client.name}</p>
+          <p className="mt-1 text-sm text-muted">This errand will be added to {client.name}'s account. You'll pay the service fee with your own card, and you'll both be able to see and manage it.</p>
+        </div>
+      )}
 
       {step === 1 && <Card><h2 className="mb-4 text-xl font-bold">Choose a service</h2><div className="grid gap-4 sm:grid-cols-2">{bookableServiceTypes.map((service) => <ServiceCard key={service} service={service} selected={form.serviceType === service} onClick={() => update('serviceType', service)} />)}</div></Card>}
 
@@ -179,16 +206,22 @@ export default function Book() {
               <p className="mt-1 text-2xl font-black">£{form.price}</p>
             </div>
           </div>
-          <div className={`rounded-xl border p-3 text-sm ${wallet.balance < 0 ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-900/20' : 'border-surface-hi bg-surface-hi'}`}>
-            <span className="font-semibold text-muted">Wallet balance: </span>
-            <span className={`font-bold ${wallet.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-ink'}`}>£{wallet.balance.toFixed(2)}</span>
-            {wallet.balance < 0 && (
-              <p className="mt-1 text-red-600 dark:text-red-400">Your wallet balance is negative. Top it up in your dashboard after booking.</p>
-            )}
-            {wallet.balance >= 0 && wallet.balance < 20 && (
-              <p className="mt-1 text-muted">Low balance — consider topping up your wallet before your runner shops for you.</p>
-            )}
-          </div>
+          {onBehalfOf ? (
+            <div className="rounded-xl border border-surface-hi bg-surface-hi p-3 text-sm text-muted">
+              You're paying the service fee for <span className="font-semibold text-ink">{client?.name}</span> with your card. The cost of any goods is covered by their wallet.
+            </div>
+          ) : (
+            <div className={`rounded-xl border p-3 text-sm ${wallet.balance < 0 ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-900/20' : 'border-surface-hi bg-surface-hi'}`}>
+              <span className="font-semibold text-muted">Wallet balance: </span>
+              <span className={`font-bold ${wallet.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-ink'}`}>£{wallet.balance.toFixed(2)}</span>
+              {wallet.balance < 0 && (
+                <p className="mt-1 text-red-600 dark:text-red-400">Your wallet balance is negative. Top it up in your dashboard after booking.</p>
+              )}
+              {wallet.balance >= 0 && wallet.balance < 20 && (
+                <p className="mt-1 text-muted">Low balance — consider topping up your wallet before your runner shops for you.</p>
+              )}
+            </div>
+          )}
 
           {paymentLoading && (
             <p className="text-sm text-muted">Preparing payment…</p>

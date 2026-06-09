@@ -43,6 +43,11 @@ enum BookingType {
   WEEKLY_SUBSCRIPTION
 }
 
+enum CarerLinkStatus {
+  PENDING
+  ACTIVE
+}
+
 enum ServiceType {
   DOG_WALKING
   GROCERY_SHOPPING
@@ -86,8 +91,26 @@ model CustomerProfile {
   reviews            Review[]
   walletTransactions WalletTransaction[]
   bookingTemplates   BookingTemplate[]
+  carerLinksAsCarer  CarerLink[]          @relation("CarerLinksAsCarer")
+  carerLinksAsClient CarerLink[]          @relation("CarerLinksAsClient")
+  carerBookings      Booking[]            @relation("CarerBookings")
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
+}
+
+model CarerLink {
+  id        String          @id @default(cuid())
+  carerId   String
+  carer     CustomerProfile @relation("CarerLinksAsCarer", fields: [carerId], references: [id], onDelete: Cascade)
+  clientId  String
+  client    CustomerProfile @relation("CarerLinksAsClient", fields: [clientId], references: [id], onDelete: Cascade)
+  status    CarerLinkStatus @default(PENDING)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@unique([carerId, clientId])
+  @@index([carerId])
+  @@index([clientId])
 }
 
 model RunnerProfile {
@@ -119,6 +142,8 @@ model Booking {
   customer         CustomerProfile  @relation(fields: [customerId], references: [id], onDelete: Cascade)
   runnerId         String?
   runner           RunnerProfile?   @relation(fields: [runnerId], references: [id], onDelete: SetNull)
+  createdByCarerId String?
+  createdByCarer   CustomerProfile? @relation("CarerBookings", fields: [createdByCarerId], references: [id], onDelete: SetNull)
   serviceType      ServiceType
   bookingType      BookingType
   subscriptionPlan String?
@@ -142,6 +167,7 @@ model Booking {
   @@index([customerId])
   @@index([runnerId])
   @@index([status])
+  @@index([createdByCarerId])
 }
 
 model Review {

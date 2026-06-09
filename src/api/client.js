@@ -82,5 +82,9 @@ export const api = {
   templates: () => request('/templates'),
   getTemplate: (id) => request(`/templates/${id}`),
   createTemplate: (data) => request('/templates', { method: 'POST', body: data }),
-  deleteTemplate: (id) => request(`/templates/${id}`, { method: 'DELETE' })
+  deleteTemplate: (id) => request(`/templates/${id}`, { method: 'DELETE' }),
+  carers: () => request('/carers'),
+  inviteCarer: (email) => request('/carers', { method: 'POST', body: { email } }),
+  acceptCarerInvite: (id) => request(`/carers/${id}/accept`, { method: 'POST' }),
+  removeCarerLink: (id) => request(`/carers/${id}`, { method: 'DELETE' })
 };

@@ -1,4 +1,4 @@
-import { Calendar, Clock, MapPin, UserRound } from 'lucide-react';
+import { Calendar, Clock, HeartHandshake, MapPin, UserRound } from 'lucide-react';
 import Card from './Card';
 import StatusBadge from './StatusBadge';
 
@@ -10,8 +10,16 @@ export default function BookingCard({ booking, runner, customer, actions }) {
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-lg font-bold text-ink">{booking.serviceType}</h3>
             <StatusBadge status={booking.status} />
+            {booking.createdByCarer && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
+                <HeartHandshake size={12} /> Carer-assisted
+              </span>
+            )}
           </div>
           <p className="mt-1 text-sm text-muted">{booking.bookingType}</p>
+          {booking.createdByCarer && (
+            <p className="mt-1 text-xs text-muted">Booked by {booking.createdByCarer.name}</p>
+          )}
         </div>
         <p className="rounded-xl bg-surface-hi px-4 py-2 text-xl font-extrabold text-ink">£{booking.price}</p>
       </div>

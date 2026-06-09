@@ -1,5 +1,5 @@
 import { Elements } from '@stripe/react-stripe-js';
-import { Bookmark, CalendarCheck, Clock, MessageSquare, Pencil, Plus, Star, Trash2, WalletCards } from 'lucide-react';
+import { Bookmark, CalendarCheck, Clock, HeartHandshake, MessageSquare, Pencil, Plus, Star, Trash2, UserPlus, WalletCards } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
@@ -14,12 +14,12 @@ import { useApp } from '../context/AppContext';
 import { areas } from '../data/options';
 import { stripePromise } from '../lib/stripe';
 
-const tabs = ['Overview', 'My Bookings', 'Templates', 'Wallet', 'Messages', 'Account'];
+const tabs = ['Overview', 'My Bookings', 'Templates', 'Carers', 'Wallet', 'Messages', 'Account'];
 
 const TOP_UP_AMOUNTS = [10, 20, 50, 100];
 
 export default function CustomerDashboard() {
-  const { authUser, bookings, runners, customers, updateBooking, fetchMessages, sendMessage, updateProfile, showToast, wallet, fetchWallet, setWallet, templates, fetchTemplates, saveTemplate, removeTemplate } = useApp();
+  const { authUser, bookings, runners, customers, updateBooking, fetchMessages, sendMessage, updateProfile, showToast, wallet, fetchWallet, setWallet, templates, fetchTemplates, saveTemplate, removeTemplate, carerLinks, fetchCarerLinks, inviteCarer, acceptCarerInvite, removeCarerLink } = useApp();
   const [activeTab, setActiveTab] = useState('Overview');
   const [ratingBooking, setRatingBooking] = useState(null);
   const [contact, setContact] = useState(null);
@@ -51,6 +51,11 @@ export default function CustomerDashboard() {
   const [saveTemplateBooking, setSaveTemplateBooking] = useState(null);
   const [templateName, setTemplateName] = useState('');
   const [saveTemplateLoading, setSaveTemplateLoading] = useState(false);
+
+  // Carer state
+  const [carersLoading, setCarersLoading] = useState(false);
+  const [carerEmail, setCarerEmail] = useState('');
+  const [carerInviteLoading, setCarerInviteLoading] = useState(false);
 
   const mine = bookings.filter((b) => b.customerId === authUser.id);
   const grouped = {
@@ -136,6 +141,12 @@ export default function CustomerDashboard() {
     if (activeTab !== 'Wallet') return;
     setWalletLoading(true);
     fetchWallet().finally(() => setWalletLoading(false));
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (activeTab !== 'Carers') return;
+    setCarersLoading(true);
+    fetchCarerLinks().finally(() => setCarersLoading(false));
   }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -386,6 +397,131 @@ export default function CustomerDashboard() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── Carers ───────────────────────────────────────────────────────── */}
+      {activeTab === 'Carers' && (
+        <div className="space-y-4">
+          <p className="text-sm text-muted">
+            Carers can book and manage errands on someone else's behalf. Invite someone to be your carer, or accept an invite to help a person you care for.
+          </p>
+
+          {/* Invite a carer */}
+          <Card className="space-y-3">
+            <h2 className="text-lg font-bold text-ink">Invite a carer</h2>
+            <p className="text-sm text-muted">Enter the email of an existing ErrandBuddy account. They'll be able to book on your behalf once they accept.</p>
+            <form
+              className="flex flex-col gap-2 sm:flex-row"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!carerEmail.trim()) return;
+                setCarerInviteLoading(true);
+                try { await inviteCarer(carerEmail.trim()); setCarerEmail(''); }
+                catch { /* toast shown by context */ }
+                finally { setCarerInviteLoading(false); }
+              }}
+            >
+              <input
+                type="email"
+                className="focus-ring min-h-11 flex-1 rounded-lg border border-surface-hi px-3 text-sm"
+                placeholder="carer@example.com"
+                value={carerEmail}
+                onChange={(e) => setCarerEmail(e.target.value)}
+              />
+              <Button type="submit" loading={carerInviteLoading} disabled={!carerEmail.trim()}>
+                <UserPlus size={14} /> Send invite
+              </Button>
+            </form>
+          </Card>
+
+          {carersLoading && <p className="text-sm text-muted">Loading…</p>}
+
+          {/* Pending invites received (I am the carer) */}
+          {!carersLoading && carerLinks.pendingInvites.length > 0 && (
+            <Card className="space-y-3">
+              <h2 className="text-lg font-bold text-ink">Invitations to you</h2>
+              {carerLinks.pendingInvites.map((link) => (
+                <div key={link.id} className="flex items-center justify-between gap-3 border-b border-surface-hi pb-3 last:border-0">
+                  <div>
+                    <p className="font-semibold text-ink">{link.counterpart?.name}</p>
+                    <p className="text-sm text-muted">{link.counterpart?.email} · wants you as their carer</p>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <Button className="text-sm" onClick={() => acceptCarerInvite(link.id)}>Accept</Button>
+                    <Button variant="outline" className="text-sm" onClick={() => removeCarerLink(link.id)}>Decline</Button>
+                  </div>
+                </div>
+              ))}
+            </Card>
+          )}
+
+          {/* People I help (I am the carer, ACTIVE) */}
+          <Card className="space-y-3">
+            <div className="flex items-center gap-2">
+              <HeartHandshake size={18} className="text-primary" />
+              <h2 className="text-lg font-bold text-ink">People you help</h2>
+            </div>
+            {!carersLoading && carerLinks.clients.length === 0 ? (
+              <p className="text-sm text-muted">No one yet. When someone invites you as their carer and you accept, they'll appear here.</p>
+            ) : (
+              carerLinks.clients.map((link) => {
+                const theirBookings = bookings.filter((b) => b.createdByCarerId === authUser.id && b.customerId === link.counterpart?.id);
+                return (
+                  <div key={link.id} className="border-b border-surface-hi pb-3 last:border-0">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-ink">{link.counterpart?.name}</p>
+                        <p className="text-sm text-muted">{link.counterpart?.email}</p>
+                      </div>
+                      <div className="flex shrink-0 gap-2">
+                        <Button as={Link} to={`/book?onBehalfOf=${link.counterpart?.id}`} className="text-sm">
+                          <Plus size={14} /> Book for {link.counterpart?.name?.split(' ')[0]}
+                        </Button>
+                        <button
+                          onClick={() => removeCarerLink(link.id)}
+                          className="shrink-0 rounded-lg p-2 text-muted transition hover:bg-surface-hi hover:text-red-500"
+                          title="Remove link"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+                    {theirBookings.length > 0 && (
+                      <p className="mt-2 text-xs text-muted">You've placed {theirBookings.length} booking{theirBookings.length === 1 ? '' : 's'} for {link.counterpart?.name?.split(' ')[0]}.</p>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </Card>
+
+          {/* My carers (I am the client) */}
+          <Card className="space-y-3">
+            <h2 className="text-lg font-bold text-ink">Your carers</h2>
+            {!carersLoading && carerLinks.carers.length === 0 ? (
+              <p className="text-sm text-muted">You haven't invited anyone yet. Invite a carer above to let them book errands for you.</p>
+            ) : (
+              carerLinks.carers.map((link) => (
+                <div key={link.id} className="flex items-center justify-between gap-3 border-b border-surface-hi pb-3 last:border-0">
+                  <div>
+                    <p className="font-semibold text-ink">{link.counterpart?.name}</p>
+                    <p className="text-sm text-muted">{link.counterpart?.email}</p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <StatusBadge status={link.status} />
+                    <button
+                      onClick={() => removeCarerLink(link.id)}
+                      className="rounded-lg p-2 text-muted transition hover:bg-surface-hi hover:text-red-500"
+                      title="Remove carer"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </Card>
         </div>
       )}
 

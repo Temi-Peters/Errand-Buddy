@@ -249,6 +249,42 @@ export const notifyRunnerRejected = (user, reason) => {
   });
 };
 
+export const notifyCarerInvited = (link) => {
+  const carerEmail = link.carer?.user?.email;
+  const carerName = link.carer?.user?.name || 'there';
+  const clientName = link.client?.user?.name || 'An ErrandBuddy customer';
+  if (!carerEmail) return;
+
+  send({
+    to: carerEmail,
+    subject: `${clientName} invited you to be their carer on ErrandBuddy`,
+    html: layout(`
+      ${h1(`You've been invited, ${carerName.split(' ')[0]}.`)}
+      ${p(`<strong>${clientName}</strong> would like you to be able to book and manage errands on their behalf through ErrandBuddy.`)}
+      ${p(`If you accept, you'll see them under "People you help" in your dashboard and can book errands for them. You'll cover the service fee with your own card; either of you can remove the link at any time.`)}
+      ${btn('Review invite', `${SITE}/customer/dashboard`)}
+    `)
+  });
+};
+
+export const notifyCarerInviteAccepted = (link) => {
+  const clientEmail = link.client?.user?.email;
+  const clientName = link.client?.user?.name || 'there';
+  const carerName = link.carer?.user?.name || 'Your carer';
+  if (!clientEmail) return;
+
+  send({
+    to: clientEmail,
+    subject: `${carerName} accepted your carer invite`,
+    html: layout(`
+      ${h1(`${carerName} is now your carer.`)}
+      ${p(`<strong>${carerName}</strong> has accepted your invite and can now book errands on your behalf. You'll both be able to see and manage these bookings.`)}
+      ${p(`You can remove this link at any time from your dashboard.`)}
+      ${btn('View dashboard', `${SITE}/customer/dashboard`)}
+    `)
+  });
+};
+
 export const notifyNewMessage = () => {
   // Real-time messaging is in-app — no email notification for individual messages
 };

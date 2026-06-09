@@ -15,10 +15,12 @@ import {
   notifyTaskCompleted,
   notifyTaskStarted
 } from './notification.service.js';
+import { assertActiveCarerLink } from './carers.service.js';
 
 const bookingInclude = {
   customer: { include: { user: true } },
   runner: { include: { user: true } },
+  createdByCarer: { include: { user: true } },
   review: true,
   payment: true
 };
@@ -49,7 +51,11 @@ export const listBookings = async (user) => {
   const where = {};
 
   if (user.role === 'CUSTOMER') {
-    where.customerId = user.customerProfile.id;
+    // A customer sees their own bookings plus any they placed as a carer for a client.
+    where.OR = [
+      { customerId: user.customerProfile.id },
+      { createdByCarerId: user.customerProfile.id }
+    ];
   }
 
   if (user.role === 'RUNNER') {
@@ -93,18 +99,31 @@ export const createBooking = async (user, data) => {
     throw new ApiError(400, 'Valid price is required');
   }
 
+  // Carer-assisted booking: when onBehalfOf is set, the authenticated user is the
+  // carer placing a booking under the client's profile. The carer pays the service
+  // fee with their own card (the PaymentIntent is unchanged — they're at checkout).
+  let customerId = user.customerProfile.id;
+  let createdByCarerId = null;
+  const onBehalfOf = data.onBehalfOf ? String(data.onBehalfOf) : null;
+  if (onBehalfOf && onBehalfOf !== user.customerProfile.id) {
+    await assertActiveCarerLink(user.customerProfile.id, onBehalfOf);
+    customerId = onBehalfOf;
+    createdByCarerId = user.customerProfile.id;
+  }
+
   const fee = platformFee(price);
 
   // Create the Stripe PaymentIntent first so we have a real intent ID to store
   const intent = await createPaymentIntent({
     amount: price,
     currency: 'gbp',
-    metadata: { customerId: user.customerProfile.id, serviceType }
+    metadata: { customerId, serviceType, ...(createdByCarerId ? { createdByCarerId } : {}) }
   });
 
   const booking = await prisma.booking.create({
     data: {
-      customerId: user.customerProfile.id,
+      customerId,
+      createdByCarerId,
       serviceType,
       bookingType: bookingTypeFromClient(data.bookingType),
       subscriptionPlan: data.subscriptionPlan || data.subscription || null,
@@ -148,7 +167,9 @@ export const updateBooking = async (user, id, data) => {
     throw new ApiError(404, 'Booking not found');
   }
 
-  if (user.role === 'CUSTOMER' && existing.customerId !== user.customerProfile.id) {
+  if (user.role === 'CUSTOMER'
+    && existing.customerId !== user.customerProfile.id
+    && existing.createdByCarerId !== user.customerProfile.id) {
     throw new ApiError(403, 'You can only update your own bookings');
   }
 
@@ -303,7 +324,10 @@ export const getBookingClientSecret = async (user, id) => {
   });
 
   if (!booking) throw new ApiError(404, 'Booking not found');
-  if (booking.customerId !== user.customerProfile.id) throw new ApiError(403, 'Not your booking');
+  if (booking.customerId !== user.customerProfile.id
+    && booking.createdByCarerId !== user.customerProfile.id) {
+    throw new ApiError(403, 'Not your booking');
+  }
   if (booking.status !== 'PENDING_PAYMENT') throw new ApiError(400, 'Payment already completed for this booking');
   if (!booking.payment?.stripePaymentIntentId) throw new ApiError(400, 'No payment intent found for this booking');
 
@@ -318,7 +342,10 @@ export const reviewBooking = async (user, id, data) => {
 
   const booking = await prisma.booking.findUnique({ where: { id } });
   if (!booking) throw new ApiError(404, 'Booking not found');
-  if (booking.customerId !== user.customerProfile.id) throw new ApiError(403, 'You can only review your bookings');
+  if (booking.customerId !== user.customerProfile.id
+    && booking.createdByCarerId !== user.customerProfile.id) {
+    throw new ApiError(403, 'You can only review your bookings');
+  }
   if (booking.status !== 'COMPLETED' || !booking.runnerId) throw new ApiError(409, 'Only completed runner bookings can be reviewed');
 
   const savedReview = await prisma.review.upsert({

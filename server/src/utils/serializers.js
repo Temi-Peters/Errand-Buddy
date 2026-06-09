@@ -97,6 +97,12 @@ export const bookingToClient = (booking) => ({
   address: booking.address,
   contactPhone: booking.contactPhone,
   postcodeArea: booking.postcodeArea,
+  createdByCarerId: booking.createdByCarerId || null,
+  createdByCarer: booking.createdByCarer ? {
+    id: booking.createdByCarer.id,
+    name: booking.createdByCarer.user?.name,
+    email: booking.createdByCarer.user?.email
+  } : null,
   customer: booking.customer ? customerToClient(booking.customer) : undefined,
   runner: booking.runner ? runnerToClient(booking.runner) : undefined,
   payment: booking.payment ? {
@@ -108,6 +114,27 @@ export const bookingToClient = (booking) => ({
     runnerPayoutAmount: Number(booking.payment.runnerPayoutAmount)
   } : undefined
 });
+
+// viewerId is the CustomerProfile id of the requesting user, so the client knows
+// which side of the link they're on and who the counterpart is.
+export const carerLinkToClient = (link, viewerId) => {
+  const viewerIsCarer = link.carerId === viewerId;
+  const counterpart = viewerIsCarer ? link.client : link.carer;
+
+  return {
+    id: link.id,
+    status: enumToTitle(link.status),
+    role: viewerIsCarer ? 'carer' : 'client',
+    carerId: link.carerId,
+    clientId: link.clientId,
+    counterpart: counterpart ? {
+      id: counterpart.id,
+      name: counterpart.user?.name,
+      email: counterpart.user?.email
+    } : null,
+    createdAt: link.createdAt.toISOString()
+  };
+};
 
 export const messageToClient = (message) => ({
   id: message.id,
