@@ -285,6 +285,34 @@ export const notifyCarerInviteAccepted = (link) => {
   });
 };
 
+// Sent to whoever paid for the goods — the carer for carer-placed bookings,
+// otherwise the customer. forClientName is set only when a carer was charged.
+export const notifyGoodsCharged = ({ to, name, serviceLabel, amount, newBalance, forClientName }) => {
+  if (!to) return;
+
+  const isNegative = newBalance < 0;
+  const balanceLine = isNegative
+    ? `Your wallet balance is now <strong style="color:#DC2626;">−£${Math.abs(newBalance).toFixed(2)}</strong>. Please top up — new bookings are paused while your balance is negative.`
+    : `Your wallet balance is now <strong>£${newBalance.toFixed(2)}</strong>.`;
+
+  send({
+    to,
+    subject: `Charged £${amount.toFixed(2)} for goods — ${serviceLabel}`,
+    html: layout(`
+      ${h1(`Goods charged, ${name.split(' ')[0]}.`)}
+      ${p(forClientName
+        ? `Your runner has completed the ${serviceLabel} errand you booked for <strong>${forClientName}</strong>. The cost of the goods they purchased has been charged to your wallet.`
+        : `Your runner has completed your ${serviceLabel} errand. The cost of the goods they purchased has been charged to your wallet.`)}
+      ${detailTable(`
+        ${detail('Cost of goods', `£${amount.toFixed(2)}`)}
+        ${detail('Wallet balance', `${isNegative ? '−' : ''}£${Math.abs(newBalance).toFixed(2)}`)}
+      `)}
+      ${p(balanceLine)}
+      ${btn('View wallet', `${SITE}/customer/dashboard`)}
+    `)
+  });
+};
+
 export const notifyNewMessage = () => {
   // Real-time messaging is in-app — no email notification for individual messages
 };
