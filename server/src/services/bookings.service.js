@@ -6,8 +6,10 @@ import {
   bookingStatusFromClient,
   bookingToClient,
   bookingTypeFromClient,
-  serviceTypeFromClient
+  serviceTypeFromClient,
+  serviceTypeToClient
 } from '../utils/serializers.js';
+import { chargeForGoods } from './wallet.service.js';
 import {
   notifyBookingAssigned,
   notifyBookingCreated,
@@ -249,7 +251,11 @@ export const acceptBooking = async (user, id) => {
 
 export const startBooking = async (user, id) => transitionRunnerBooking(user, id, 'ASSIGNED', 'IN_PROGRESS');
 
-export const completeBooking = async (user, id) => {
+export const completeBooking = async (user, id, goodsCostInput = 0) => {
+  const goodsCost = Number(goodsCostInput) || 0;
+  if (goodsCost < 0) throw new ApiError(400, 'Cost of goods cannot be negative');
+  if (goodsCost > 1000) throw new ApiError(400, 'Cost of goods looks too high — please double-check');
+
   const updated = await transitionRunnerBooking(user, id, 'IN_PROGRESS', 'COMPLETED');
 
   await prisma.runnerProfile.update({
@@ -257,26 +263,66 @@ export const completeBooking = async (user, id) => {
     data: { completedTasks: { increment: 1 } }
   });
 
-  // Trigger runner payout if they have a Connect account and payment has succeeded
+  // Charge the payer for the cost of goods. The payer is the carer when the booking
+  // was placed on a client's behalf, otherwise the customer themselves.
+  if (goodsCost > 0) {
+    try {
+      const booking = await prisma.booking.findUnique({ where: { id } });
+      if (booking && !booking.goodsChargedAt) {
+        const payerId = booking.createdByCarerId || booking.customerId;
+        await chargeForGoods(payerId, goodsCost, id, `Cost of goods — ${serviceTypeToClient(booking.serviceType)}`);
+        await prisma.booking.update({
+          where: { id },
+          data: { goodsCost, goodsChargedAt: new Date() }
+        });
+      }
+    } catch (err) {
+      // Log but don't fail completion — the runner has already done the work
+      console.error(`[goods] Failed to charge goods for booking ${id}:`, err.message);
+    }
+  }
+
+  // Trigger runner payout (service fee + goods reimbursement) if Connect + payment ready
   try {
     const payment = await prisma.payment.findUnique({ where: { bookingId: id } });
     const runner = await prisma.runnerProfile.findUnique({ where: { id: user.runnerProfile.id } });
 
-    if (payment?.status === 'SUCCEEDED' && runner?.stripeAccountId && !payment.stripeTransferId) {
-      const transfer = await createTransfer({
-        amount: Number(payment.runnerPayoutAmount),
-        destination: runner.stripeAccountId,
-        metadata: { bookingId: id, runnerId: runner.id }
-      });
+    if (payment?.status === 'SUCCEEDED' && runner?.stripeAccountId) {
+      if (!payment.stripeTransferId) {
+        const transfer = await createTransfer({
+          amount: Number(payment.runnerPayoutAmount),
+          destination: runner.stripeAccountId,
+          metadata: { bookingId: id, runnerId: runner.id, type: 'service_payout' }
+        });
 
-      await prisma.payment.update({
-        where: { id: payment.id },
-        data: { stripeTransferId: transfer.id }
-      });
+        await prisma.payment.update({
+          where: { id: payment.id },
+          data: { stripeTransferId: transfer.id }
+        });
+      }
+
+      // Reimburse the runner for goods they fronted (separate from the service payout)
+      if (goodsCost > 0 && !payment.goodsTransferId) {
+        const goodsTransfer = await createTransfer({
+          amount: goodsCost,
+          destination: runner.stripeAccountId,
+          metadata: { bookingId: id, runnerId: runner.id, type: 'goods_reimbursement' }
+        });
+
+        await prisma.payment.update({
+          where: { id: payment.id },
+          data: { goodsReimbursementAmount: goodsCost, goodsTransferId: goodsTransfer.id }
+        });
+      }
     }
   } catch (err) {
-    // Log but don't fail the completion — payout can be retried manually
+    // Log but don't fail the completion — transfers can be retried manually
     console.error(`[payout] Failed to transfer for booking ${id}:`, err.message);
+  }
+
+  if (goodsCost > 0) {
+    const fresh = await prisma.booking.findUnique({ where: { id }, include: bookingInclude });
+    return bookingToClient(fresh);
   }
 
   return updated;

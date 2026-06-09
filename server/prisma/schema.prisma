@@ -161,6 +161,8 @@ model Booking {
   overageCoveredAmount Decimal?         @db.Decimal(10, 2)
   overageCoveredAt     DateTime?
   onHoldUntil          DateTime?
+  goodsCost            Decimal?         @db.Decimal(10, 2)
+  goodsChargedAt       DateTime?
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @updatedAt
 
@@ -197,6 +199,8 @@ model Payment {
   stripeTransferId      String?
   platformFeeAmount     Decimal       @db.Decimal(10, 2)
   runnerPayoutAmount    Decimal       @db.Decimal(10, 2)
+  goodsReimbursementAmount Decimal?   @db.Decimal(10, 2)
+  goodsTransferId       String?
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 }

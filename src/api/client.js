@@ -64,7 +64,7 @@ export const api = {
   updateBooking: (id, data) => request(`/bookings/${id}`, { method: 'PATCH', body: data }),
   acceptBooking: (id) => request(`/bookings/${id}/accept`, { method: 'POST' }),
   startBooking: (id) => request(`/bookings/${id}/start`, { method: 'POST' }),
-  completeBooking: (id) => request(`/bookings/${id}/complete`, { method: 'POST' }),
+  completeBooking: (id, goodsCost = 0) => request(`/bookings/${id}/complete`, { method: 'POST', body: { goodsCost } }),
   reviewBooking: (id, data) => request(`/bookings/${id}/review`, { method: 'POST', body: data }),
   resumePayment: (id) => request(`/bookings/${id}/resume-payment`, { method: 'POST' }),
   messages: (id) => request(`/bookings/${id}/messages`),

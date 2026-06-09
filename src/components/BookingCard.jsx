@@ -1,4 +1,4 @@
-import { Calendar, Clock, HeartHandshake, MapPin, UserRound } from 'lucide-react';
+import { Calendar, Clock, HeartHandshake, MapPin, ShoppingBag, UserRound } from 'lucide-react';
 import Card from './Card';
 import StatusBadge from './StatusBadge';
 
@@ -29,6 +29,7 @@ export default function BookingCard({ booking, runner, customer, actions }) {
         <p className="flex items-center gap-2"><MapPin size={16} /> {booking.postcodeArea}</p>
         {runner && <p className="flex items-center gap-2"><UserRound size={16} /> {runner.name}</p>}
         {customer && <p className="flex items-center gap-2"><UserRound size={16} /> {customer.name}</p>}
+        {booking.goodsCost != null && <p className="flex items-center gap-2"><ShoppingBag size={16} /> Goods: £{booking.goodsCost.toFixed(2)}</p>}
       </div>
       {actions && <div className="mt-5 flex flex-wrap gap-2 border-t border-surface-hi pt-4">{actions}</div>}
     </Card>
