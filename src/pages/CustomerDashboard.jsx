@@ -529,10 +529,10 @@ export default function CustomerDashboard() {
       {activeTab === 'Wallet' && (
         <div className="space-y-4">
           {/* Balance card */}
-          <Card className="bg-stone-900 text-white dark:bg-zinc-900">
+          <div className="rounded-2xl bg-stone-900 p-5 text-white shadow-lift sm:p-6 dark:bg-zinc-900">
             <p className="text-xs font-semibold uppercase tracking-widest text-stone-400">Wallet balance</p>
             {walletLoading ? (
-              <p className="mt-2 text-muted text-sm">Loading…</p>
+              <p className="mt-2 text-sm text-stone-400">Loading…</p>
             ) : (
               <p className="mt-1 text-4xl font-black">£{wallet.balance.toFixed(2)}</p>
             )}
@@ -541,7 +541,7 @@ export default function CustomerDashboard() {
                 Negative balance — new bookings are paused until this is cleared.
               </p>
             )}
-          </Card>
+          </div>
 
           {/* Top-up */}
           <Card className="space-y-4">
