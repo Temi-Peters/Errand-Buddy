@@ -190,6 +190,8 @@ export const runnerConnectStatus = async (req, res, next) => {
 
 export const triggerTransfer = async (req, res, next) => {
   try {
+    if (req.user.role !== 'ADMIN') throw new ApiError(403, 'Admins only');
+
     const { bookingId } = req.body;
     if (!bookingId) throw new ApiError(400, 'bookingId is required');
 
@@ -204,23 +206,46 @@ export const triggerTransfer = async (req, res, next) => {
 
     if (!payment) throw new ApiError(404, 'Payment not found');
     if (payment.status !== 'SUCCEEDED') throw new ApiError(400, 'Payment has not succeeded');
-    if (payment.stripeTransferId) throw new ApiError(400, 'Transfer already exists');
 
     const runner = payment.booking.runner;
     if (!runner?.stripeAccountId) throw new ApiError(400, 'Runner has no Stripe account');
 
-    const transfer = await createTransfer({
-      amount: Number(payment.runnerPayoutAmount),
-      destination: runner.stripeAccountId,
-      metadata: { bookingId, paymentId: payment.id }
-    });
+    const goodsCost = payment.booking.goodsChargedAt ? Number(payment.booking.goodsCost) : 0;
+    const result = {};
 
-    await prisma.payment.update({
-      where: { id: payment.id },
-      data: { stripeTransferId: transfer.id }
-    });
+    // Service payout (idempotent)
+    if (!payment.stripeTransferId) {
+      const transfer = await createTransfer({
+        amount: Number(payment.runnerPayoutAmount),
+        destination: runner.stripeAccountId,
+        metadata: { bookingId, paymentId: payment.id, type: 'service_payout' }
+      });
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: { stripeTransferId: transfer.id }
+      });
+      result.serviceTransferId = transfer.id;
+    }
 
-    res.json({ transferId: transfer.id });
+    // Goods reimbursement (idempotent) — covers runners who completed before Connect was set up
+    if (goodsCost > 0 && !payment.goodsTransferId) {
+      const goodsTransfer = await createTransfer({
+        amount: goodsCost,
+        destination: runner.stripeAccountId,
+        metadata: { bookingId, paymentId: payment.id, type: 'goods_reimbursement' }
+      });
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: { goodsReimbursementAmount: goodsCost, goodsTransferId: goodsTransfer.id }
+      });
+      result.goodsTransferId = goodsTransfer.id;
+    }
+
+    if (!result.serviceTransferId && !result.goodsTransferId) {
+      throw new ApiError(400, 'Nothing to transfer — runner already paid out for this booking');
+    }
+
+    res.json(result);
   } catch (err) {
     next(err);
   }

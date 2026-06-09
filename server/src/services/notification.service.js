@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { env } from '../config/env.js';
+import { serviceTypeToClient } from '../utils/serializers.js';
 
 const resend = env.resendApiKey ? new Resend(env.resendApiKey) : null;
 const FROM = env.resendFrom;
@@ -65,12 +66,12 @@ export const notifyBookingCreated = (booking) => {
 
   send({
     to: email,
-    subject: `Booking confirmed — ${booking.serviceType}`,
+    subject: `Booking confirmed — ${serviceTypeToClient(booking.serviceType)}`,
     html: layout(`
       ${h1(`Booking confirmed, ${name.split(' ')[0]}.`)}
       ${p(`Your errand request has been received. A local runner will be assigned shortly.`)}
       ${detailTable(`
-        ${detail('Service', booking.serviceType)}
+        ${detail('Service', serviceTypeToClient(booking.serviceType))}
         ${detail('Date', date)}
         ${detail('Time', booking.time)}
         ${detail('Price', `£${booking.price}`)}
@@ -91,10 +92,10 @@ export const notifyBookingAssigned = (booking) => {
   if (customerEmail) {
     send({
       to: customerEmail,
-      subject: `Runner assigned — ${booking.serviceType}`,
+      subject: `Runner assigned — ${serviceTypeToClient(booking.serviceType)}`,
       html: layout(`
         ${h1(`Your runner is confirmed.`)}
-        ${p(`<strong>${runnerName}</strong> has been assigned to your ${booking.serviceType} errand on ${date} at ${booking.time}.`)}
+        ${p(`<strong>${runnerName}</strong> has been assigned to your ${serviceTypeToClient(booking.serviceType)} errand on ${date} at ${booking.time}.`)}
         ${p(`You can message your runner directly from your dashboard once the task is in progress.`)}
         ${btn('View dashboard', `${SITE}/customer/dashboard`)}
       `)
@@ -106,12 +107,12 @@ export const notifyBookingAssigned = (booking) => {
   if (runnerEmail) {
     send({
       to: runnerEmail,
-      subject: `New task assigned — ${booking.serviceType}`,
+      subject: `New task assigned — ${serviceTypeToClient(booking.serviceType)}`,
       html: layout(`
         ${h1(`You've been assigned a task.`)}
         ${p(`You have a new errand assigned to you. Check your dashboard for full details and instructions.`)}
         ${detailTable(`
-          ${detail('Service', booking.serviceType)}
+          ${detail('Service', serviceTypeToClient(booking.serviceType))}
           ${detail('Date', date)}
           ${detail('Time', booking.time)}
           ${detail('Address', booking.address || '—')}
@@ -131,10 +132,10 @@ export const notifyTaskStarted = (booking) => {
 
   send({
     to: email,
-    subject: `Your errand is underway — ${booking.serviceType}`,
+    subject: `Your errand is underway — ${serviceTypeToClient(booking.serviceType)}`,
     html: layout(`
       ${h1(`${runnerName} is on it.`)}
-      ${p(`Your ${booking.serviceType} errand has started. Your runner is working on it now.`)}
+      ${p(`Your ${serviceTypeToClient(booking.serviceType)} errand has started. Your runner is working on it now.`)}
       ${p(`You can message them directly from your dashboard if you need to pass on any details.`)}
       ${btn('View dashboard', `${SITE}/customer/dashboard`)}
     `)
@@ -149,10 +150,10 @@ export const notifyTaskCompleted = (booking) => {
 
   send({
     to: email,
-    subject: `Errand complete — ${booking.serviceType}`,
+    subject: `Errand complete — ${serviceTypeToClient(booking.serviceType)}`,
     html: layout(`
       ${h1(`All done, ${name.split(' ')[0]}.`)}
-      ${p(`${runnerName} has completed your ${booking.serviceType} errand. We hope everything went smoothly.`)}
+      ${p(`${runnerName} has completed your ${serviceTypeToClient(booking.serviceType)} errand. We hope everything went smoothly.`)}
       ${p(`Leave a quick rating to help keep ErrandBuddy's runner quality high — it only takes a second.`)}
       ${btn('Rate your runner', `${SITE}/customer/dashboard`)}
     `)
