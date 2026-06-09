@@ -14,6 +14,7 @@ export const AppProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => localStorage.getItem('eb-theme') || 'light');
   const [wallet, setWallet] = useState({ balance: 0, transactions: [] });
   const [templates, setTemplates] = useState([]);
+  const [carerLinks, setCarerLinks] = useState({ clients: [], pendingInvites: [], carers: [] });
 
   const toggleTheme = () => {
     setTheme(prev => {
@@ -282,6 +283,59 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const fetchCarerLinks = async () => {
+    try {
+      const response = await api.carers();
+      setCarerLinks({
+        clients: response.clients || [],
+        pendingInvites: response.pendingInvites || [],
+        carers: response.carers || []
+      });
+      return response;
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  };
+
+  const inviteCarer = async (email) => {
+    try {
+      const response = await api.inviteCarer(email);
+      setCarerLinks((prev) => ({ ...prev, carers: [response.link, ...prev.carers] }));
+      showToast('Carer invite sent');
+      return response.link;
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  };
+
+  const acceptCarerInvite = async (id) => {
+    try {
+      await api.acceptCarerInvite(id);
+      await fetchCarerLinks();
+      showToast('Invite accepted');
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  };
+
+  const removeCarerLink = async (id) => {
+    try {
+      await api.removeCarerLink(id);
+      setCarerLinks((prev) => ({
+        clients: prev.clients.filter((l) => l.id !== id),
+        pendingInvites: prev.pendingInvites.filter((l) => l.id !== id),
+        carers: prev.carers.filter((l) => l.id !== id)
+      }));
+      showToast('Link removed');
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  };
+
   const fetchWallet = async () => {
     try {
       const response = await api.wallet();
@@ -329,6 +383,7 @@ export const AppProvider = ({ children }) => {
     theme,
     wallet,
     templates,
+    carerLinks,
     showToast,
     toggleTheme,
     login,
@@ -346,8 +401,12 @@ export const AppProvider = ({ children }) => {
     setWallet,
     fetchTemplates,
     saveTemplate,
-    removeTemplate
-  }), [customers, runners, bookings, authUser, authLoading, serviceUnavailable, toast, theme, wallet, templates]);
+    removeTemplate,
+    fetchCarerLinks,
+    inviteCarer,
+    acceptCarerInvite,
+    removeCarerLink
+  }), [customers, runners, bookings, authUser, authLoading, serviceUnavailable, toast, theme, wallet, templates, carerLinks]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
