@@ -1,4 +1,4 @@
-import { CheckCircle2, ClipboardList, ExternalLink, MessageSquare, Pencil, ShieldCheck, Star, WalletCards } from 'lucide-react';
+import { Bell, CheckCircle2, ClipboardList, ExternalLink, MessageSquare, Pencil, ShieldCheck, Star, WalletCards } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import BookingCard from '../components/BookingCard';
@@ -13,7 +13,7 @@ const tabs = ['Available Tasks', 'My Tasks', 'Earnings', 'Messages', 'Profile'];
 const payout = (price) => Math.round(price * 0.9 * 100) / 100;
 
 export default function RunnerDashboard() {
-  const { authUser, runners, customers, bookings, updateBooking, acceptBooking, completeRunnerTask, fetchMessages, sendMessage, updateProfile, showToast } = useApp();
+  const { authUser, runners, customers, bookings, updateBooking, acceptBooking, completeRunnerTask, fetchMessages, sendMessage, updateProfile, showToast, enablePush } = useApp();
   const [activeTab, setActiveTab] = useState(tabs[0]);
   const [contact, setContact] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -216,6 +216,18 @@ export default function RunnerDashboard() {
       )}
       {activeTab === 'Profile' && (
         <div className="space-y-4">
+          <Card>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold text-ink">Notifications</h2>
+                <p className="mt-1 text-sm text-muted">Get instant alerts on this device when a task is assigned to you.</p>
+              </div>
+              <Button variant="outline" className="shrink-0 text-sm" onClick={enablePush}>
+                <Bell size={14} /> Enable
+              </Button>
+            </div>
+          </Card>
+
           <Card>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-ink">Your details</h2>
