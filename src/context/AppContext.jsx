@@ -56,7 +56,7 @@ export const AppProvider = ({ children }) => {
     showToast(error.message, 'error');
   };
 
-  const refreshFromApi = async (user = authUser) => {
+  const refreshFromApi = async (user = authUser, { silent = false } = {}) => {
     if (!getToken()) return false;
 
     try {
@@ -74,13 +74,36 @@ export const AppProvider = ({ children }) => {
     } catch (error) {
       if (error instanceof ApiRequestError && error.status === 401) {
         clearSession();
-      } else if (!(error instanceof ApiUnavailableError)) {
+      } else if (!(error instanceof ApiUnavailableError) && !silent) {
         handleApiError(error);
       }
-      if (error instanceof ApiUnavailableError) setServiceUnavailable(true);
+      if (error instanceof ApiUnavailableError && !silent) setServiceUnavailable(true);
       return false;
     }
   };
+
+  // Auto-refresh data while the user is active, so bookings/wallet update without
+  // a manual page reload. Polls every 45s when the tab is visible, and immediately
+  // when the tab regains focus. Silent so transient blips don't spam toasts.
+  useEffect(() => {
+    if (!authUser) return undefined;
+
+    const refresh = () => {
+      if (document.visibilityState === 'visible' && getToken()) {
+        refreshFromApi(authUser, { silent: true });
+      }
+    };
+
+    const interval = setInterval(refresh, 45000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [authUser]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const restoreSession = async () => {

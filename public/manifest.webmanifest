@@ -1,0 +1,19 @@
+{
+  "name": "ErrandBuddy — Local Errand Service",
+  "short_name": "ErrandBuddy",
+  "description": "Reliable local runners for everyday errands across Leicester. Book grocery help, prescription pickups and more.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAFAF9",
+  "theme_color": "#1C1917",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ]
+}
