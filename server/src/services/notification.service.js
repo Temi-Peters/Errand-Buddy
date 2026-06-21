@@ -1,6 +1,10 @@
 import { Resend } from 'resend';
 import { env } from '../config/env.js';
 import { serviceTypeToClient } from '../utils/serializers.js';
+import { sendPushToUser } from './push.service.js';
+
+const CUSTOMER_URL = '/customer/dashboard';
+const RUNNER_URL = '/runner/dashboard';
 
 const resend = env.resendApiKey ? new Resend(env.resendApiKey) : null;
 const FROM = env.resendFrom;
@@ -80,6 +84,13 @@ export const notifyBookingCreated = (booking) => {
       ${btn('View booking', `${SITE}/customer/dashboard`)}
     `)
   });
+
+  sendPushToUser(booking.customer?.userId, {
+    title: 'Booking confirmed',
+    body: `Your ${serviceTypeToClient(booking.serviceType)} request is in. We'll assign a runner shortly.`,
+    url: CUSTOMER_URL,
+    tag: `booking-${booking.id}`
+  });
 };
 
 export const notifyBookingAssigned = (booking) => {
@@ -122,6 +133,19 @@ export const notifyBookingAssigned = (booking) => {
       `)
     });
   }
+
+  sendPushToUser(booking.customer?.userId, {
+    title: 'Runner assigned',
+    body: `${runnerName} will handle your ${serviceTypeToClient(booking.serviceType)} errand.`,
+    url: CUSTOMER_URL,
+    tag: `booking-${booking.id}`
+  });
+  sendPushToUser(booking.runner?.userId, {
+    title: 'New task assigned',
+    body: `You've been assigned a ${serviceTypeToClient(booking.serviceType)} errand.`,
+    url: RUNNER_URL,
+    tag: `booking-${booking.id}`
+  });
 };
 
 export const notifyTaskStarted = (booking) => {
@@ -140,6 +164,13 @@ export const notifyTaskStarted = (booking) => {
       ${btn('View dashboard', `${SITE}/customer/dashboard`)}
     `)
   });
+
+  sendPushToUser(booking.customer?.userId, {
+    title: 'Your errand is underway',
+    body: `${runnerName} has started your ${serviceTypeToClient(booking.serviceType)} errand.`,
+    url: CUSTOMER_URL,
+    tag: `booking-${booking.id}`
+  });
 };
 
 export const notifyTaskCompleted = (booking) => {
@@ -157,6 +188,13 @@ export const notifyTaskCompleted = (booking) => {
       ${p(`Leave a quick rating to help keep ErrandBuddy's runner quality high — it only takes a second.`)}
       ${btn('Rate your runner', `${SITE}/customer/dashboard`)}
     `)
+  });
+
+  sendPushToUser(booking.customer?.userId, {
+    title: 'Errand complete',
+    body: `${runnerName} has completed your ${serviceTypeToClient(booking.serviceType)} errand.`,
+    url: CUSTOMER_URL,
+    tag: `booking-${booking.id}`
   });
 };
 
@@ -266,6 +304,13 @@ export const notifyCarerInvited = (link) => {
       ${btn('Review invite', `${SITE}/customer/dashboard`)}
     `)
   });
+
+  sendPushToUser(link.carer?.userId, {
+    title: 'Carer invite',
+    body: `${clientName} invited you to be their carer.`,
+    url: CUSTOMER_URL,
+    tag: `carer-${link.id}`
+  });
 };
 
 export const notifyCarerInviteAccepted = (link) => {
@@ -284,11 +329,18 @@ export const notifyCarerInviteAccepted = (link) => {
       ${btn('View dashboard', `${SITE}/customer/dashboard`)}
     `)
   });
+
+  sendPushToUser(link.client?.userId, {
+    title: 'Carer added',
+    body: `${carerName} can now book errands on your behalf.`,
+    url: CUSTOMER_URL,
+    tag: `carer-${link.id}`
+  });
 };
 
 // Sent to whoever paid for the goods — the carer for carer-placed bookings,
 // otherwise the customer. forClientName is set only when a carer was charged.
-export const notifyGoodsCharged = ({ to, name, serviceLabel, amount, newBalance, forClientName }) => {
+export const notifyGoodsCharged = ({ to, name, userId, serviceLabel, amount, newBalance, forClientName }) => {
   if (!to) return;
 
   const isNegative = newBalance < 0;
@@ -311,6 +363,15 @@ export const notifyGoodsCharged = ({ to, name, serviceLabel, amount, newBalance,
       ${p(balanceLine)}
       ${btn('View wallet', `${SITE}/customer/dashboard`)}
     `)
+  });
+
+  sendPushToUser(userId, {
+    title: `Charged £${amount.toFixed(2)} for goods`,
+    body: forClientName
+      ? `For the ${serviceLabel} errand you booked for ${forClientName}.`
+      : `For your ${serviceLabel} errand. Balance: ${newBalance < 0 ? '−' : ''}£${Math.abs(newBalance).toFixed(2)}.`,
+    url: CUSTOMER_URL,
+    tag: 'goods-charge'
   });
 };
 

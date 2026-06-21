@@ -345,6 +345,7 @@ export const completeBooking = async (user, id, goodsCostInput = 0) => {
       notifyGoodsCharged({
         to: payer?.user?.email,
         name: payer?.user?.name || 'there',
+        userId: payer?.userId,
         serviceLabel: serviceTypeToClient(fresh.serviceType),
         amount: goodsCost,
         newBalance: chargeResult.newBalance,

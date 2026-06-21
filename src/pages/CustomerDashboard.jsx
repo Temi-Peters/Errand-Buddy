@@ -1,5 +1,5 @@
 import { Elements } from '@stripe/react-stripe-js';
-import { Bookmark, CalendarCheck, Clock, HeartHandshake, MessageSquare, Pencil, Plus, Star, Trash2, UserPlus, WalletCards } from 'lucide-react';
+import { Bell, Bookmark, CalendarCheck, Clock, HeartHandshake, MessageSquare, Pencil, Plus, Star, Trash2, UserPlus, WalletCards } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
@@ -19,7 +19,7 @@ const tabs = ['Overview', 'My Bookings', 'Templates', 'Carers', 'Wallet', 'Messa
 const TOP_UP_AMOUNTS = [10, 20, 50, 100];
 
 export default function CustomerDashboard() {
-  const { authUser, bookings, runners, customers, updateBooking, fetchMessages, sendMessage, updateProfile, showToast, wallet, fetchWallet, setWallet, templates, fetchTemplates, saveTemplate, removeTemplate, carerLinks, fetchCarerLinks, inviteCarer, acceptCarerInvite, removeCarerLink } = useApp();
+  const { authUser, bookings, runners, customers, updateBooking, fetchMessages, sendMessage, updateProfile, showToast, wallet, fetchWallet, setWallet, templates, fetchTemplates, saveTemplate, removeTemplate, carerLinks, fetchCarerLinks, inviteCarer, acceptCarerInvite, removeCarerLink, enablePush } = useApp();
   const [activeTab, setActiveTab] = useState('Overview');
   const [ratingBooking, setRatingBooking] = useState(null);
   const [contact, setContact] = useState(null);
@@ -718,6 +718,18 @@ export default function CustomerDashboard() {
                 ))}
               </div>
             )}
+          </Card>
+
+          <Card>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold text-ink">Notifications</h2>
+                <p className="mt-1 text-sm text-muted">Get instant alerts on this device for booking updates, carer activity and charges.</p>
+              </div>
+              <Button variant="outline" className="shrink-0 text-sm" onClick={enablePush}>
+                <Bell size={14} /> Enable
+              </Button>
+            </div>
           </Card>
 
           <Card>
