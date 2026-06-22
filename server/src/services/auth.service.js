@@ -9,10 +9,10 @@ const includeProfiles = { customerProfile: true, runnerProfile: true };
 
 export const registerUser = async (data) => {
   const role = String(data.role || 'customer').toUpperCase();
-  const allowedRoles = ['CUSTOMER', 'RUNNER', 'ADMIN'];
+  const allowedRoles = ['CUSTOMER', 'RUNNER'];
 
   if (!allowedRoles.includes(role)) {
-    throw new ApiError(400, 'Role must be CUSTOMER, RUNNER, or ADMIN');
+    throw new ApiError(400, 'Role must be CUSTOMER or RUNNER');
   }
 
   if (!data.name || !data.email || !data.password) {
