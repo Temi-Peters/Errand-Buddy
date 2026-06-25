@@ -10,6 +10,12 @@ const resend = env.resendApiKey ? new Resend(env.resendApiKey) : null;
 const FROM = env.resendFrom;
 const SITE = env.clientUrl;
 
+// Escape user-controlled values before interpolating into email HTML — stops a
+// name/bio set to malicious markup from injecting links/markup into emails.
+const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => (
+  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+));
+
 // ─── Core send helper ────────────────────────────────────────────────────────
 
 const send = async ({ to, subject, html }) => {
@@ -62,7 +68,7 @@ const btn = (text, href) => `<a href="${href}" style="display:inline-block;margi
 // ─── Notification functions ───────────────────────────────────────────────────
 
 export const notifyBookingCreated = (booking) => {
-  const name = booking.customer?.user?.name || 'there';
+  const name = esc(booking.customer?.user?.name) || 'there';
   const email = booking.customer?.user?.email;
   if (!email) return;
 
@@ -95,8 +101,8 @@ export const notifyBookingCreated = (booking) => {
 
 export const notifyBookingAssigned = (booking) => {
   const customerEmail = booking.customer?.user?.email;
-  const customerName = booking.customer?.user?.name || 'there';
-  const runnerName = booking.runner?.user?.name || 'A runner';
+  const customerName = esc(booking.customer?.user?.name) || 'there';
+  const runnerName = esc(booking.runner?.user?.name) || 'A runner';
   const date = new Date(booking.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 
   // Email customer
@@ -150,8 +156,8 @@ export const notifyBookingAssigned = (booking) => {
 
 export const notifyTaskStarted = (booking) => {
   const email = booking.customer?.user?.email;
-  const name = booking.customer?.user?.name || 'there';
-  const runnerName = booking.runner?.user?.name || 'Your runner';
+  const name = esc(booking.customer?.user?.name) || 'there';
+  const runnerName = esc(booking.runner?.user?.name) || 'Your runner';
   if (!email) return;
 
   send({
@@ -175,8 +181,8 @@ export const notifyTaskStarted = (booking) => {
 
 export const notifyTaskCompleted = (booking) => {
   const email = booking.customer?.user?.email;
-  const name = booking.customer?.user?.name || 'there';
-  const runnerName = booking.runner?.user?.name || 'Your runner';
+  const name = esc(booking.customer?.user?.name) || 'there';
+  const runnerName = esc(booking.runner?.user?.name) || 'Your runner';
   if (!email) return;
 
   send({
@@ -200,7 +206,7 @@ export const notifyTaskCompleted = (booking) => {
 
 export const notifyCustomerWelcome = (user) => {
   const email = user?.email;
-  const name = user?.name || 'there';
+  const name = esc(user?.name) || 'there';
   if (!email) return;
 
   send({
@@ -221,7 +227,7 @@ export const notifyCustomerWelcome = (user) => {
 
 export const notifyWalletLow = (user, balance) => {
   const email = user?.email;
-  const name = user?.name || 'there';
+  const name = esc(user?.name) || 'there';
   if (!email) return;
 
   const isNegative = balance < 0;
@@ -241,7 +247,7 @@ export const notifyWalletLow = (user, balance) => {
 
 export const notifyRunnerApplicationSubmitted = (user) => {
   const email = user?.email;
-  const name = user?.name || 'there';
+  const name = esc(user?.name) || 'there';
   if (!email) return;
 
   send({
@@ -257,7 +263,7 @@ export const notifyRunnerApplicationSubmitted = (user) => {
 
 export const notifyRunnerApproved = (user) => {
   const email = user?.email;
-  const name = user?.name || 'there';
+  const name = esc(user?.name) || 'there';
   if (!email) return;
 
   send({
@@ -273,7 +279,7 @@ export const notifyRunnerApproved = (user) => {
 
 export const notifyRunnerRejected = (user, reason) => {
   const email = user?.email;
-  const name = user?.name || 'there';
+  const name = esc(user?.name) || 'there';
   if (!email) return;
 
   send({
@@ -290,8 +296,8 @@ export const notifyRunnerRejected = (user, reason) => {
 
 export const notifyCarerInvited = (link) => {
   const carerEmail = link.carer?.user?.email;
-  const carerName = link.carer?.user?.name || 'there';
-  const clientName = link.client?.user?.name || 'An ErrandBuddy customer';
+  const carerName = esc(link.carer?.user?.name) || 'there';
+  const clientName = esc(link.client?.user?.name) || 'An ErrandBuddy customer';
   if (!carerEmail) return;
 
   send({
@@ -315,8 +321,8 @@ export const notifyCarerInvited = (link) => {
 
 export const notifyCarerInviteAccepted = (link) => {
   const clientEmail = link.client?.user?.email;
-  const clientName = link.client?.user?.name || 'there';
-  const carerName = link.carer?.user?.name || 'Your carer';
+  const clientName = esc(link.client?.user?.name) || 'there';
+  const carerName = esc(link.carer?.user?.name) || 'Your carer';
   if (!clientEmail) return;
 
   send({
@@ -343,6 +349,8 @@ export const notifyCarerInviteAccepted = (link) => {
 export const notifyGoodsCharged = ({ to, name, userId, serviceLabel, amount, newBalance, forClientName }) => {
   if (!to) return;
 
+  const safeName = esc(name) || 'there';
+  const safeClient = forClientName ? esc(forClientName) : null;
   const isNegative = newBalance < 0;
   const balanceLine = isNegative
     ? `Your wallet balance is now <strong style="color:#DC2626;">−£${Math.abs(newBalance).toFixed(2)}</strong>. Please top up — new bookings are paused while your balance is negative.`
@@ -352,9 +360,9 @@ export const notifyGoodsCharged = ({ to, name, userId, serviceLabel, amount, new
     to,
     subject: `Charged £${amount.toFixed(2)} for goods — ${serviceLabel}`,
     html: layout(`
-      ${h1(`Goods charged, ${name.split(' ')[0]}.`)}
-      ${p(forClientName
-        ? `Your runner has completed the ${serviceLabel} errand you booked for <strong>${forClientName}</strong>. The cost of the goods they purchased has been charged to your wallet.`
+      ${h1(`Goods charged, ${safeName.split(' ')[0]}.`)}
+      ${p(safeClient
+        ? `Your runner has completed the ${serviceLabel} errand you booked for <strong>${safeClient}</strong>. The cost of the goods they purchased has been charged to your wallet.`
         : `Your runner has completed your ${serviceLabel} errand. The cost of the goods they purchased has been charged to your wallet.`)}
       ${detailTable(`
         ${detail('Cost of goods', `£${amount.toFixed(2)}`)}
