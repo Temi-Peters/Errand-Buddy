@@ -77,7 +77,7 @@ export const createBookingSchema = z.object({
     address: z.string().trim().min(1, 'Address is required'),
     contactPhone: z.string().trim().min(1, 'Contact phone is required'),
     postcodeArea: z.string().trim().min(1, 'Postcode area is required'),
-    price: z.coerce.number().positive('Price must be a positive number')
+    onBehalfOf: z.string().trim().optional().nullable()
   })
 });
 
