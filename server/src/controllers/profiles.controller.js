@@ -5,12 +5,49 @@ import { updateRunnerStatus } from '../services/runners.service.js';
 
 export const runners = async (req, res, next) => {
   try {
+    const user = req.user;
+
+    if (user.role === 'ADMIN') {
+      const profiles = await prisma.runnerProfile.findMany({
+        include: { user: true },
+        orderBy: { user: { name: 'asc' } }
+      });
+      return res.json({ runners: profiles.map(runnerToClient) });
+    }
+
+    // Non-admins: only the runner's own record, plus runners on the caller's own
+    // bookings. Email/phone are redacted on records that aren't the caller's own.
+    const ids = new Set();
+    if (user.runnerProfile) ids.add(user.runnerProfile.id);
+
+    if (user.role === 'CUSTOMER' && user.customerProfile) {
+      const bookings = await prisma.booking.findMany({
+        where: {
+          runnerId: { not: null },
+          OR: [{ customerId: user.customerProfile.id }, { createdByCarerId: user.customerProfile.id }]
+        },
+        select: { runnerId: true }
+      });
+      bookings.forEach((b) => b.runnerId && ids.add(b.runnerId));
+    }
+
     const profiles = await prisma.runnerProfile.findMany({
+      where: { id: { in: [...ids] } },
       include: { user: true },
       orderBy: { user: { name: 'asc' } }
     });
 
-    res.json({ runners: profiles.map(runnerToClient) });
+    const ownId = user.runnerProfile?.id;
+    const result = profiles.map((profile) => {
+      const dto = runnerToClient(profile);
+      if (profile.id !== ownId) {
+        delete dto.email;
+        delete dto.phone;
+      }
+      return dto;
+    });
+
+    res.json({ runners: result });
   } catch (error) {
     next(error);
   }
@@ -18,7 +55,42 @@ export const runners = async (req, res, next) => {
 
 export const customers = async (req, res, next) => {
   try {
+    const user = req.user;
+
+    if (user.role === 'ADMIN') {
+      const profiles = await prisma.customerProfile.findMany({
+        include: { user: true },
+        orderBy: { user: { name: 'asc' } }
+      });
+      return res.json({ customers: profiles.map(customerToClient) });
+    }
+
+    // Non-admins only ever need themselves plus the customers on bookings they can
+    // see (runners need their assigned/area customers; carers need their clients).
+    const ids = new Set();
+    if (user.customerProfile) ids.add(user.customerProfile.id);
+
+    let where = null;
+    if (user.role === 'RUNNER' && user.runnerProfile?.status === 'ACTIVE') {
+      where = {
+        OR: [
+          { runnerId: user.runnerProfile.id },
+          { runnerId: null, status: 'PENDING', postcodeArea: user.runnerProfile.area }
+        ]
+      };
+    } else if (user.role === 'CUSTOMER' && user.customerProfile) {
+      where = {
+        OR: [{ customerId: user.customerProfile.id }, { createdByCarerId: user.customerProfile.id }]
+      };
+    }
+
+    if (where) {
+      const bookings = await prisma.booking.findMany({ where, select: { customerId: true } });
+      bookings.forEach((b) => ids.add(b.customerId));
+    }
+
     const profiles = await prisma.customerProfile.findMany({
+      where: { id: { in: [...ids] } },
       include: { user: true },
       orderBy: { user: { name: 'asc' } }
     });

@@ -18,3 +18,12 @@ export const env = {
   vapidPrivateKey: process.env.VAPID_PRIVATE_KEY || '',
   vapidSubject: process.env.VAPID_SUBJECT || 'mailto:hello@errandbuddy.co.uk'
 };
+
+// Fail fast in production rather than silently signing tokens with a known/weak
+// secret. A missing or default JWT secret means anyone can forge tokens.
+if (env.nodeEnv === 'production') {
+  const secret = process.env.JWT_SECRET || '';
+  if (!secret || secret === 'dev-only-change-me' || secret.length < 32) {
+    throw new Error('JWT_SECRET must be set to a strong secret (>= 32 chars) in production');
+  }
+}

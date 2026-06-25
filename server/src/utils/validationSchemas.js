@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 const roleSchema = z.preprocess(
   (value) => String(value || '').toUpperCase(),
-  z.enum(['CUSTOMER', 'RUNNER', 'ADMIN'], { message: 'Role must be CUSTOMER, RUNNER, or ADMIN' })
+  z.enum(['CUSTOMER', 'RUNNER'], { message: 'Role must be CUSTOMER or RUNNER' })
 );
 
 const serviceTypeSchema = z.preprocess(
