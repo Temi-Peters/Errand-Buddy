@@ -10,6 +10,7 @@ import {
   serviceTypeToClient
 } from '../utils/serializers.js';
 import { chargeForGoods } from './wallet.service.js';
+import { resolveBookingPrice } from '../config/pricing.js';
 import {
   notifyBookingAssigned,
   notifyBookingCreated,
@@ -97,9 +98,12 @@ export const createBooking = async (user, data) => {
     throw new ApiError(400, 'This service is not currently available for booking');
   }
 
-  const price = Number(data.price);
-  if (!price || price <= 0) {
-    throw new ApiError(400, 'Valid price is required');
+  // Price is derived server-side from the booking tier — a client-supplied amount is
+  // never trusted, so a customer cannot pay an arbitrary price for a booking.
+  const bookingType = bookingTypeFromClient(data.bookingType);
+  const price = resolveBookingPrice(bookingType, data.subscriptionPlan || data.subscription || data.bookingType);
+  if (price == null) {
+    throw new ApiError(400, 'Could not determine the price for this booking. Please reselect your plan.');
   }
 
   // Carer-assisted booking: when onBehalfOf is set, the authenticated user is the
@@ -142,7 +146,7 @@ export const createBooking = async (user, data) => {
       customerId,
       createdByCarerId,
       serviceType,
-      bookingType: bookingTypeFromClient(data.bookingType),
+      bookingType,
       subscriptionPlan: data.subscriptionPlan || data.subscription || null,
       date: new Date(`${data.date}T00:00:00.000Z`),
       time: data.time,
