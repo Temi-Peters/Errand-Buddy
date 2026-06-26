@@ -8,7 +8,7 @@ const RUNNER_URL = '/runner/dashboard';
 
 const resend = env.resendApiKey ? new Resend(env.resendApiKey) : null;
 const FROM = env.resendFrom;
-const SITE = env.clientUrl;
+const SITE = env.appUrl;
 
 // Escape user-controlled values before interpolating into email HTML — stops a
 // name/bio set to malicious markup from injecting links/markup into emails.
