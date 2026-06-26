@@ -140,8 +140,8 @@ export const runnerConnect = async (req, res, next) => {
       });
     }
 
-    const returnUrl = `${env.clientUrl}/runner/dashboard?connect=success`;
-    const refreshUrl = `${env.clientUrl}/runner/dashboard?connect=refresh`;
+    const returnUrl = `${env.appUrl}/runner/dashboard?connect=success`;
+    const refreshUrl = `${env.appUrl}/runner/dashboard?connect=refresh`;
 
     const accountLink = await createAccountLink({
       accountId: stripeAccountId,
