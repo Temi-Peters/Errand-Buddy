@@ -13,6 +13,7 @@ import { walletRouter } from './routes/wallet.routes.js';
 import { templatesRouter } from './routes/templates.routes.js';
 import { carersRouter } from './routes/carers.routes.js';
 import { pushRouter } from './routes/push.routes.js';
+import { feedbackRouter } from './routes/feedback.routes.js';
 import { handleWebhook } from './controllers/payments.controller.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 
@@ -82,6 +83,7 @@ app.use('/api/wallet', walletRouter);
 app.use('/api/templates', templatesRouter);
 app.use('/api/carers', carersRouter);
 app.use('/api/push', pushRouter);
+app.use('/api/feedback', feedbackRouter);
 
 app.use(notFound);
 app.use(errorHandler);

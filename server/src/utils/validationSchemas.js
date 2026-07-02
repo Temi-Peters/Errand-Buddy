@@ -108,3 +108,14 @@ export const reviewSchema = z.object({
     review: z.string().trim().max(1000, 'Review must be 1000 characters or fewer').optional()
   })
 });
+
+export const feedbackSchema = z.object({
+  body: z.object({
+    wouldUse: z.enum(['Yes', 'Maybe', 'No'], { message: 'Please choose whether you would use ErrandBuddy' }),
+    valueRating: z.coerce.number().int().min(1, 'Please give a rating').max(5, 'Rating must be 1-5'),
+    pricePreference: z.string().trim().min(1, 'Please choose a price range'),
+    standoutFeature: z.string().trim().min(1, 'Please choose a standout feature'),
+    comment: z.string().trim().max(1000, 'Comment must be 1000 characters or fewer').optional().nullable(),
+    email: z.preprocess((v) => (v === '' ? undefined : v), z.string().trim().email('Enter a valid email').optional())
+  })
+});

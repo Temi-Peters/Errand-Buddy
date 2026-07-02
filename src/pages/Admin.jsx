@@ -76,13 +76,22 @@ export default function Admin() {
             <h1 className="mt-2 text-2xl font-bold sm:text-3xl">Admin panel</h1>
             <p className="mt-1 text-stone-400">Marketplace overview, runner approvals and booking operations.</p>
           </div>
-          <Link
-            to="/admin/revenue-model"
-            className="flex shrink-0 items-center gap-2 rounded-xl border border-stone-700 px-4 py-2.5 text-sm font-semibold text-stone-300 transition hover:border-stone-500 hover:text-white"
-          >
-            <LineChart size={16} />
-            Revenue Model
-          </Link>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <Link
+              to="/admin/survey"
+              className="flex items-center gap-2 rounded-xl border border-stone-700 px-4 py-2.5 text-sm font-semibold text-stone-300 transition hover:border-stone-500 hover:text-white"
+            >
+              <BarChart3 size={16} />
+              Survey
+            </Link>
+            <Link
+              to="/admin/revenue-model"
+              className="flex items-center gap-2 rounded-xl border border-stone-700 px-4 py-2.5 text-sm font-semibold text-stone-300 transition hover:border-stone-500 hover:text-white"
+            >
+              <LineChart size={16} />
+              Revenue Model
+            </Link>
+          </div>
         </div>
       </div>
       <div className="flex justify-center">
