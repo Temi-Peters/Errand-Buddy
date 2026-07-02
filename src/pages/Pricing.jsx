@@ -102,7 +102,7 @@ export default function Pricing() {
       </div>
 
       <p className="text-center text-sm text-muted">
-        Final price may vary based on task complexity and travel distance. Payments are in test mode during the MVP phase.
+        Final price may vary based on task complexity and travel distance. You'll always see the price before you confirm a booking.
       </p>
 
     </div>
