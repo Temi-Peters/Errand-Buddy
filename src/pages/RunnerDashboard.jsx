@@ -350,7 +350,7 @@ export default function RunnerDashboard() {
       )}
       {contact && <Modal title={`${contact.booking.serviceType} · ${contact.customer.name}`} onClose={() => { setContact(null); setMessages([]); setMessageBody(''); }}><div className="space-y-3"><div className="max-h-64 space-y-2 overflow-y-auto rounded-lg bg-surface-hi p-3 text-sm">{messages.length ? messages.map((message) => {
         const fromMe = message.senderId === authUser.userId;
-        return <div key={message.id} className={`rounded-lg p-3 ${fromMe ? 'ml-8 bg-primary text-white' : 'mr-8 bg-surface text-ink'}`}><p className="font-bold">{fromMe ? 'You' : message.senderName}</p><p>{message.body}</p></div>;
+        return <div key={message.id} className={`rounded-lg p-3 ${fromMe ? 'ml-8 bg-stone-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'mr-8 bg-surface text-ink'}`}><p className="font-bold">{fromMe ? 'You' : message.senderName}</p><p>{message.body}</p></div>;
       }) : <p className="text-muted">No messages yet.</p>}</div><textarea className="focus-ring min-h-24 w-full rounded-lg border border-surface-hi p-3" placeholder="Type a message" value={messageBody} onChange={(event) => setMessageBody(event.target.value)} /><Button className="w-full" loading={messageLoading} disabled={!messageBody.trim()} onClick={submitMessage}>Send message</Button></div></Modal>}
 
       {completingBooking && (

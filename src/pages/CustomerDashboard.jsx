@@ -845,7 +845,7 @@ export default function CustomerDashboard() {
               {messages.length ? messages.map((msg) => {
                 const fromMe = msg.senderId === authUser.userId;
                 return (
-                  <div key={msg.id} className={`rounded-lg p-3 ${fromMe ? 'ml-8 bg-primary text-white' : 'mr-8 bg-surface text-ink'}`}>
+                  <div key={msg.id} className={`rounded-lg p-3 ${fromMe ? 'ml-8 bg-stone-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'mr-8 bg-surface text-ink'}`}>
                     <p className="font-bold">{fromMe ? 'You' : msg.senderName}</p>
                     <p>{msg.body}</p>
                   </div>

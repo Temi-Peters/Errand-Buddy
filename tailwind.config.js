@@ -8,7 +8,7 @@ export default {
         sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
       },
       colors: {
-        primary:      '#1C1917',
+        primary:      'rgb(var(--color-primary) / <alpha-value>)',
         secondary:    '#10B981',
         ink:          'rgb(var(--color-ink) / <alpha-value>)',
         muted:        'rgb(var(--color-muted) / <alpha-value>)',
