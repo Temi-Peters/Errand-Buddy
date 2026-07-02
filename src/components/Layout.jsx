@@ -1,7 +1,7 @@
 import Navbar from './Navbar';
 import Toast from './Toast';
 import { Link } from 'react-router-dom';
-import { PackageCheck } from 'lucide-react';
+import BuddyMark from './BuddyMark';
 
 const footerLinks = [
   { heading: 'Platform', links: [['Services', '/services'], ['Pricing', '/pricing'], ['How it works', '/how-it-works'], ['Coverage', '/coverage'], ['Book an errand', '/book']] },
@@ -20,7 +20,7 @@ export default function Layout({ children }) {
             <div>
               <Link to="/" className="flex items-center gap-2 font-extrabold text-ink">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-stone-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
-                  <PackageCheck size={15} />
+                  <BuddyMark className="h-[15px] w-[15px]" />
                 </span>
                 ErrandBuddy
               </Link>
