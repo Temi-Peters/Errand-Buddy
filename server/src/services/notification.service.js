@@ -18,13 +18,13 @@ const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => (
 
 // ─── Core send helper ────────────────────────────────────────────────────────
 
-const send = async ({ to, subject, html }) => {
+const send = async ({ to, subject, html, replyTo }) => {
   if (!resend) {
     console.log(`[notifications] No RESEND_API_KEY — skipping: ${subject} → ${to}`);
     return;
   }
   try {
-    await resend.emails.send({ from: FROM, to, subject, html });
+    await resend.emails.send({ from: FROM, to, subject, html, ...(replyTo ? { replyTo } : {}) });
     console.log(`[notifications] Sent "${subject}" → ${to}`);
   } catch (err) {
     console.error(`[notifications] Failed to send "${subject}" → ${to}:`, err.message);
@@ -380,6 +380,24 @@ export const notifyGoodsCharged = ({ to, name, userId, serviceLabel, amount, new
       : `For your ${serviceLabel} errand. Balance: ${newBalance < 0 ? '−' : ''}£${Math.abs(newBalance).toFixed(2)}.`,
     url: CUSTOMER_URL,
     tag: 'goods-charge'
+  });
+};
+
+// Contact-form submission → emailed to the team inbox, reply-to set to the sender.
+export const notifyContactReceived = ({ name, email, message }) => {
+  send({
+    to: env.contactEmail,
+    replyTo: email,
+    subject: `New contact message from ${esc(name)}`,
+    html: layout(`
+      ${h1('New contact message')}
+      ${detailTable(`
+        ${detail('From', esc(name))}
+        ${detail('Email', esc(email))}
+      `)}
+      ${p(esc(message).replace(/\n/g, '<br>'))}
+      ${p(`<span style="color:#78716C;font-size:13px;">Reply directly to this email to respond to ${esc(name)}.</span>`)}
+    `)
   });
 };
 

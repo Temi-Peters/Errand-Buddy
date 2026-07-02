@@ -119,3 +119,11 @@ export const feedbackSchema = z.object({
     email: z.preprocess((v) => (v === '' ? undefined : v), z.string().trim().email('Enter a valid email').optional())
   })
 });
+
+export const contactSchema = z.object({
+  body: z.object({
+    name: z.string().trim().min(1, 'Name is required').max(120, 'Name is too long'),
+    email: z.string().trim().email('Enter a valid email'),
+    message: z.string().trim().min(5, 'Please write a short message').max(2000, 'Message must be 2000 characters or fewer')
+  })
+});

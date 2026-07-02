@@ -17,6 +17,7 @@ export const env = {
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
   resendApiKey: process.env.RESEND_API_KEY || '',
   resendFrom: process.env.RESEND_FROM || 'ErrandBuddy <onboarding@resend.dev>',
+  contactEmail: process.env.CONTACT_EMAIL || 'temidayo.peters@icloud.com',
   vapidPublicKey: process.env.VAPID_PUBLIC_KEY || '',
   vapidPrivateKey: process.env.VAPID_PRIVATE_KEY || '',
   vapidSubject: process.env.VAPID_SUBJECT || 'mailto:hello@errandbuddy.co.uk'

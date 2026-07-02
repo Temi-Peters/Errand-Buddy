@@ -86,6 +86,7 @@ export const api = {
   pushPublicKey: () => request('/push/public-key'),
   pushSubscribe: (subscription) => request('/push/subscribe', { method: 'POST', body: { subscription } }),
   pushUnsubscribe: (endpoint) => request('/push/unsubscribe', { method: 'POST', body: { endpoint } }),
+  submitContact: (data) => request('/contact', { method: 'POST', body: data }),
   submitFeedback: (data) => request('/feedback', { method: 'POST', body: data }),
   feedbackResults: () => request('/feedback'),
   carers: () => request('/carers'),
