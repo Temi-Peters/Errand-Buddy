@@ -1,6 +1,7 @@
 import { ArrowRight, CalendarCheck, PackageCheck, UserCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Button from '../components/Button';
+import BuddyMark from '../components/BuddyMark';
 import { useApp } from '../context/AppContext';
 
 const steps = [
@@ -31,7 +32,7 @@ export default function Welcome() {
       {/* Greeting */}
       <section>
         <span className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-stone-900 text-white shadow-lift dark:bg-zinc-100 dark:text-zinc-900">
-          <PackageCheck size={28} />
+          <BuddyMark className="h-7 w-7" />
         </span>
         <h1 className="mt-5 text-4xl font-black tracking-tight text-ink">
           Welcome, {firstName}.

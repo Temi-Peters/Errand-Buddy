@@ -1,8 +1,9 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { LogOut, Menu, Moon, PackageCheck, Sun, X } from 'lucide-react';
+import { LogOut, Menu, Moon, Sun, X } from 'lucide-react';
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import Button from './Button';
+import BuddyMark from './BuddyMark';
 
 export default function Navbar() {
   const { authUser, logout, theme, toggleTheme } = useApp();
@@ -26,7 +27,7 @@ export default function Navbar() {
 
         <Link to="/" className="flex items-center gap-2.5 text-lg font-bold text-ink">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-stone-900 text-white shadow-soft dark:bg-zinc-100 dark:text-zinc-900">
-            <PackageCheck size={18} />
+            <BuddyMark className="h-[18px] w-[18px]" />
           </span>
           ErrandBuddy
         </Link>
