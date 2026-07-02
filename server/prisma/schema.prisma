@@ -267,3 +267,16 @@ model WalletTransaction {
 
   @@index([customerId])
 }
+
+model SurveyResponse {
+  id              String   @id @default(cuid())
+  wouldUse        String
+  valueRating     Int
+  pricePreference String
+  standoutFeature String
+  comment         String?
+  email           String?
+  createdAt       DateTime @default(now())
+
+  @@index([createdAt])
+}

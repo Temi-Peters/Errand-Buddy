@@ -6,7 +6,7 @@ import BuddyMark from './BuddyMark';
 const footerLinks = [
   { heading: 'Platform', links: [['Services', '/services'], ['Pricing', '/pricing'], ['How it works', '/how-it-works'], ['Coverage', '/coverage'], ['Book an errand', '/book']] },
   { heading: 'Runners', links: [['Become a runner', '/become-a-runner'], ['Runner login', '/login']] },
-  { heading: 'Company', links: [['Contact', '/contact'], ['Terms', '/terms'], ['Privacy', '/privacy']] },
+  { heading: 'Company', links: [['Contact', '/contact'], ['Give feedback', '/feedback'], ['Terms', '/terms'], ['Privacy', '/privacy']] },
 ];
 
 export default function Layout({ children }) {
