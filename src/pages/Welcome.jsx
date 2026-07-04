@@ -32,7 +32,7 @@ export default function Welcome() {
       {/* Greeting */}
       <section>
         <span className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-stone-900 text-white shadow-lift dark:bg-zinc-100 dark:text-zinc-900">
-          <BuddyMark className="h-7 w-7" />
+          <BuddyMark className="h-9 w-9" />
         </span>
         <h1 className="mt-5 text-4xl font-black tracking-tight text-ink">
           Welcome, {firstName}.
