@@ -27,7 +27,7 @@ export default function Navbar() {
 
         <Link to="/" className="flex items-center gap-2.5 text-lg font-bold text-ink">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-stone-900 text-white shadow-soft dark:bg-zinc-100 dark:text-zinc-900">
-            <BuddyMark className="h-[18px] w-[18px]" />
+            <BuddyMark className="h-[24px] w-[24px]" />
           </span>
           ErrandBuddy
         </Link>

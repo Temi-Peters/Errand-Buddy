@@ -20,7 +20,7 @@ export default function Layout({ children }) {
             <div>
               <Link to="/" className="flex items-center gap-2 font-extrabold text-ink">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-stone-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
-                  <BuddyMark className="h-[15px] w-[15px]" />
+                  <BuddyMark className="h-[20px] w-[20px]" />
                 </span>
                 ErrandBuddy
               </Link>
