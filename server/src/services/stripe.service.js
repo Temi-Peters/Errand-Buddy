@@ -41,6 +41,16 @@ export const createTransfer = async ({ amount, destination, metadata = {} }) => 
   });
 };
 
+// ─── Refunds (claims) ─────────────────────────────────────────────────────────
+
+export const createRefund = async ({ paymentIntentId, amount, metadata = {} }) => {
+  return getStripe().refunds.create({
+    payment_intent: paymentIntentId,
+    ...(amount ? { amount: Math.round(amount * 100) } : {}),
+    metadata
+  });
+};
+
 // ─── Connect (runner onboarding) ──────────────────────────────────────────────
 
 export const createConnectAccount = async ({ email, name }) => {

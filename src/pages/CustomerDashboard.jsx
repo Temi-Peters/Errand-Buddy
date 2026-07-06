@@ -1,5 +1,5 @@
 import { Elements } from '@stripe/react-stripe-js';
-import { Bell, Bookmark, CalendarCheck, Clock, HeartHandshake, MessageSquare, Pencil, Plus, Star, Trash2, UserPlus, WalletCards } from 'lucide-react';
+import { Bell, Bookmark, CalendarCheck, Clock, HeartHandshake, MessageSquare, Pencil, Plus, ShieldAlert, Star, Trash2, UserPlus, WalletCards } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
@@ -19,8 +19,11 @@ const tabs = ['Overview', 'My Bookings', 'Templates', 'Carers', 'Wallet', 'Messa
 const TOP_UP_AMOUNTS = [10, 20, 50, 100];
 
 export default function CustomerDashboard() {
-  const { authUser, bookings, runners, customers, updateBooking, fetchMessages, sendMessage, updateProfile, showToast, wallet, fetchWallet, setWallet, templates, fetchTemplates, saveTemplate, removeTemplate, carerLinks, fetchCarerLinks, inviteCarer, acceptCarerInvite, removeCarerLink, enablePush } = useApp();
+  const { authUser, bookings, runners, customers, updateBooking, fetchMessages, sendMessage, updateProfile, showToast, wallet, fetchWallet, setWallet, templates, fetchTemplates, saveTemplate, removeTemplate, carerLinks, fetchCarerLinks, inviteCarer, acceptCarerInvite, removeCarerLink, enablePush, claims, fetchClaims, raiseClaim } = useApp();
   const [activeTab, setActiveTab] = useState('Overview');
+  const [claimBooking, setClaimBooking] = useState(null);
+  const [claimForm, setClaimForm] = useState({ category: '', description: '' });
+  const [claimLoading, setClaimLoading] = useState(false);
   const [ratingBooking, setRatingBooking] = useState(null);
   const [contact, setContact] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -150,6 +153,24 @@ export default function CustomerDashboard() {
   }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    fetchClaims().catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const submitClaim = async () => {
+    if (!claimBooking || !claimForm.category || claimForm.description.trim().length < 10) {
+      showToast('Please choose a reason and describe the issue (at least 10 characters).', 'error');
+      return;
+    }
+    setClaimLoading(true);
+    try {
+      await raiseClaim({ bookingId: claimBooking.id, category: claimForm.category, description: claimForm.description.trim() });
+      setClaimBooking(null);
+      setClaimForm({ category: '', description: '' });
+    } catch { /* toast shown by context */ }
+    finally { setClaimLoading(false); }
+  };
+
+  useEffect(() => {
     if (activeTab !== 'Templates') return;
     setTemplatesLoading(true);
     fetchTemplates().finally(() => setTemplatesLoading(false));
@@ -238,6 +259,21 @@ export default function CustomerDashboard() {
               <Bookmark size={14} /> Save as template
             </Button>
           )}
+          {['Assigned', 'In Progress', 'Completed'].includes(booking.status) && (() => {
+            const claim = claims.find((c) => c.bookingId === booking.id);
+            if (claim) {
+              return (
+                <span className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold ${claim.status === 'Open' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : claim.status === 'Resolved' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-surface-hi text-muted'}`}>
+                  <ShieldAlert size={14} /> Claim {claim.status.toLowerCase()}{claim.refundAmount ? ` · £${claim.refundAmount.toFixed(2)} refunded` : ''}
+                </span>
+              );
+            }
+            return (
+              <Button variant="ghost" onClick={() => { setClaimBooking(booking); setClaimForm({ category: '', description: '' }); }}>
+                <ShieldAlert size={14} /> Report an issue
+              </Button>
+            );
+          })()}
         </>
       )}
     />
@@ -744,6 +780,36 @@ export default function CustomerDashboard() {
             </div>
           </Card>
         </div>
+      )}
+
+      {/* ── Report an issue (claim) modal ────────────────────────────────── */}
+      {claimBooking && (
+        <Modal title="Report an issue" onClose={() => setClaimBooking(null)}>
+          <div className="space-y-4">
+            <div className="rounded-xl bg-surface-hi p-3 text-sm">
+              <p className="font-bold text-ink">{claimBooking.serviceType}</p>
+              <p className="text-muted">{claimBooking.date} at {claimBooking.time} · £{claimBooking.price}</p>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-bold text-ink">What went wrong?</label>
+              <div className="flex flex-wrap gap-2">
+                {['Item damaged or wrong', 'Task not completed', 'Runner conduct', 'Overcharged', 'Other'].map((c) => (
+                  <button key={c} type="button" onClick={() => setClaimForm((f) => ({ ...f, category: c }))}
+                    className={`min-h-10 rounded-lg border px-3 text-sm font-semibold transition ${claimForm.category === c ? 'border-stone-900 bg-stone-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900' : 'border-surface-hi text-muted hover:border-stone-400 hover:text-ink'}`}>
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-bold text-ink">Tell us what happened</label>
+              <textarea className="focus-ring min-h-28 w-full rounded-lg border border-surface-hi p-3 text-sm" placeholder="Describe the issue so we can put it right…" value={claimForm.description} onChange={(e) => setClaimForm((f) => ({ ...f, description: e.target.value }))} />
+            </div>
+            <Button className="w-full" loading={claimLoading} disabled={!claimForm.category || claimForm.description.trim().length < 10} onClick={submitClaim}>
+              Submit claim
+            </Button>
+          </div>
+        </Modal>
       )}
 
       {/* ── Save template modal ──────────────────────────────────────────── */}

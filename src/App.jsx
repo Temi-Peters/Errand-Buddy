@@ -19,6 +19,7 @@ import RevenueModel from './pages/RevenueModel';
 import Coverage from './pages/Coverage';
 import Feedback from './pages/Feedback';
 import SurveyResults from './pages/SurveyResults';
+import ClaimsAdmin from './pages/ClaimsAdmin';
 import { useApp } from './context/AppContext';
 
 function ProtectedRoute({ role, children }) {
@@ -57,6 +58,7 @@ export default function App() {
         <Route path="/admin" element={<ProtectedRoute role="admin"><Admin /></ProtectedRoute>} />
         <Route path="/admin/revenue-model" element={<ProtectedRoute role="admin"><RevenueModel /></ProtectedRoute>} />
         <Route path="/admin/survey" element={<ProtectedRoute role="admin"><SurveyResults /></ProtectedRoute>} />
+        <Route path="/admin/claims" element={<ProtectedRoute role="admin"><ClaimsAdmin /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>
