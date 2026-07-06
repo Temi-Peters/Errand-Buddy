@@ -33,7 +33,7 @@ export default function Privacy() {
         </Section>
 
         <Section title="Your rights">
-          <p>You can access, correct, export, or delete your personal data, and withdraw consent at any time. To make a request, email us at <a href="mailto:hello@errandbuddy.uk" className="font-semibold text-primary hover:underline">hello@errandbuddy.uk</a>. You also have the right to complain to the UK Information Commissioner's Office (ICO).</p>
+          <p>You can access, correct, export, or delete your personal data, and withdraw consent at any time. Signed-in users can <strong>download a full copy of their data</strong> or <strong>permanently delete their account</strong> directly from the Account section of their dashboard. For anything else, email us at <a href="mailto:hello@errandbuddy.uk" className="font-semibold text-primary hover:underline">hello@errandbuddy.uk</a>. You also have the right to complain to the UK Information Commissioner's Office (ICO).</p>
         </Section>
 
         <Section title="Contact">

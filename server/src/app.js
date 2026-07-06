@@ -16,6 +16,7 @@ import { pushRouter } from './routes/push.routes.js';
 import { feedbackRouter } from './routes/feedback.routes.js';
 import { contactRouter } from './routes/contact.routes.js';
 import { claimsRouter } from './routes/claims.routes.js';
+import { accountRouter } from './routes/account.routes.js';
 import { handleWebhook } from './controllers/payments.controller.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 
@@ -88,6 +89,7 @@ app.use('/api/push', pushRouter);
 app.use('/api/feedback', feedbackRouter);
 app.use('/api/contact', contactRouter);
 app.use('/api/claims', claimsRouter);
+app.use('/api/account', accountRouter);
 
 app.use(notFound);
 app.use(errorHandler);
