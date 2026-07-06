@@ -3,6 +3,7 @@ import { Bell, Bookmark, CalendarCheck, Clock, HeartHandshake, MessageSquare, Pe
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import AccountPrivacy from '../components/AccountPrivacy';
 import BookingCard from '../components/BookingCard';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -779,6 +780,8 @@ export default function CustomerDashboard() {
               ))}
             </div>
           </Card>
+
+          <AccountPrivacy />
         </div>
       )}
 

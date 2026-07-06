@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import BookingCard from '../components/BookingCard';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import AccountPrivacy from '../components/AccountPrivacy';
 import { BarChartHorizontal, BarChartVertical } from '../components/Charts';
 import Modal from '../components/Modal';
 import { useApp } from '../context/AppContext';
@@ -346,6 +347,8 @@ export default function RunnerDashboard() {
               )}
             </div>
           </Card>
+
+          <AccountPrivacy />
         </div>
       )}
       {contact && <Modal title={`${contact.booking.serviceType} · ${contact.customer.name}`} onClose={() => { setContact(null); setMessages([]); setMessageBody(''); }}><div className="space-y-3"><div className="max-h-64 space-y-2 overflow-y-auto rounded-lg bg-surface-hi p-3 text-sm">{messages.length ? messages.map((message) => {

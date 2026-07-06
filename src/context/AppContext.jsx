@@ -194,6 +194,12 @@ export const AppProvider = ({ children }) => {
     showToast('Logged out');
   };
 
+  const deleteMyAccount = async (password) => {
+    await api.deleteAccount(password);
+    clearSession();
+    showToast('Your account and data have been deleted');
+  };
+
   const addBooking = async (booking) => {
     try {
       const response = await api.createBooking(booking);
@@ -514,7 +520,8 @@ export const AppProvider = ({ children }) => {
     claims,
     fetchClaims,
     raiseClaim,
-    resolveClaim
+    resolveClaim,
+    deleteMyAccount
   }), [customers, runners, bookings, authUser, authLoading, serviceUnavailable, toast, theme, wallet, templates, carerLinks, claims]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
