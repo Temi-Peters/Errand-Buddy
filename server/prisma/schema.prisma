@@ -144,10 +144,28 @@ model RunnerProfile {
   rejectionReason String?
   suspendedAt     DateTime?
   stripeAccountId String?
+  idVerifiedAt    DateTime?
   bookings        Booking[]
   reviews         Review[]
+  documents       RunnerDocument[]
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
+}
+
+// Verification documents held transiently for admin review only. Deleted the
+// moment a runner is approved or rejected (data minimisation) — only the
+// idVerifiedAt audit stamp on RunnerProfile is retained afterwards.
+model RunnerDocument {
+  id        String        @id @default(cuid())
+  runnerId  String
+  runner    RunnerProfile @relation(fields: [runnerId], references: [id], onDelete: Cascade)
+  type      String
+  fileName  String
+  mimeType  String
+  data      Bytes
+  createdAt DateTime      @default(now())
+
+  @@index([runnerId])
 }
 
 model Booking {
