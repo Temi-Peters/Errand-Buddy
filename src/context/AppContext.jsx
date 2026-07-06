@@ -25,6 +25,7 @@ export const AppProvider = ({ children }) => {
   const [wallet, setWallet] = useState({ balance: 0, transactions: [] });
   const [templates, setTemplates] = useState([]);
   const [carerLinks, setCarerLinks] = useState({ clients: [], pendingInvites: [], carers: [] });
+  const [claims, setClaims] = useState([]);
 
   const toggleTheme = () => {
     setTheme(prev => {
@@ -404,6 +405,41 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const fetchClaims = async () => {
+    try {
+      const response = await api.claims();
+      setClaims(response.claims);
+      return response.claims;
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  };
+
+  const raiseClaim = async (data) => {
+    try {
+      const response = await api.createClaim(data);
+      setClaims((prev) => [response.claim, ...prev]);
+      showToast('Claim submitted — we\'ll be in touch');
+      return response.claim;
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  };
+
+  const resolveClaim = async (id, data) => {
+    try {
+      const response = await api.resolveClaim(id, data);
+      setClaims((prev) => prev.map((c) => c.id === id ? response.claim : c));
+      showToast(`Claim ${data.action === 'reject' ? 'rejected' : 'resolved'}`);
+      return response.claim;
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  };
+
   const fetchWallet = async () => {
     try {
       const response = await api.wallet();
@@ -474,8 +510,12 @@ export const AppProvider = ({ children }) => {
     inviteCarer,
     acceptCarerInvite,
     removeCarerLink,
-    enablePush
-  }), [customers, runners, bookings, authUser, authLoading, serviceUnavailable, toast, theme, wallet, templates, carerLinks]);
+    enablePush,
+    claims,
+    fetchClaims,
+    raiseClaim,
+    resolveClaim
+  }), [customers, runners, bookings, authUser, authLoading, serviceUnavailable, toast, theme, wallet, templates, carerLinks, claims]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

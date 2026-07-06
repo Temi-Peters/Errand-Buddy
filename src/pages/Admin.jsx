@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BarChart3, ClipboardList, LineChart, MessageSquare, PoundSterling, UserCheck, Users } from 'lucide-react';
+import { BarChart3, ClipboardList, LineChart, MessageSquare, PoundSterling, ShieldAlert, UserCheck, Users } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import { BarChartHorizontal, BarChartVertical, DonutChart, MultiBarChart } from '../components/Charts';
@@ -77,6 +77,13 @@ export default function Admin() {
             <p className="mt-1 text-stone-400">Marketplace overview, runner approvals and booking operations.</p>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
+            <Link
+              to="/admin/claims"
+              className="flex items-center gap-2 rounded-xl border border-stone-700 px-4 py-2.5 text-sm font-semibold text-stone-300 transition hover:border-stone-500 hover:text-white"
+            >
+              <ShieldAlert size={16} />
+              Claims
+            </Link>
             <Link
               to="/admin/survey"
               className="flex items-center gap-2 rounded-xl border border-stone-700 px-4 py-2.5 text-sm font-semibold text-stone-300 transition hover:border-stone-500 hover:text-white"

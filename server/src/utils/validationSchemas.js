@@ -127,3 +127,20 @@ export const contactSchema = z.object({
     message: z.string().trim().min(5, 'Please write a short message').max(2000, 'Message must be 2000 characters or fewer')
   })
 });
+
+export const createClaimSchema = z.object({
+  body: z.object({
+    bookingId: z.string().trim().min(1, 'Booking is required'),
+    category: z.string().trim().min(1, 'Please choose a reason'),
+    description: z.string().trim().min(10, 'Please describe the issue (at least 10 characters)').max(2000, 'Description must be 2000 characters or fewer')
+  })
+});
+
+export const resolveClaimSchema = z.object({
+  params: idParamSchema,
+  body: z.object({
+    action: z.enum(['resolve', 'reject'], { message: 'Action must be resolve or reject' }),
+    note: z.string().trim().max(2000, 'Note must be 2000 characters or fewer').optional(),
+    refundAmount: z.coerce.number().min(0).max(1000).optional()
+  })
+});

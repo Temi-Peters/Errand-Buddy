@@ -107,6 +107,7 @@ model CustomerProfile {
   carerLinksAsCarer  CarerLink[]          @relation("CarerLinksAsCarer")
   carerLinksAsClient CarerLink[]          @relation("CarerLinksAsClient")
   carerBookings      Booking[]            @relation("CarerBookings")
+  claims             Claim[]
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
 }
@@ -171,6 +172,7 @@ model Booking {
   review               Review?
   payment              Payment?
   messages             Message[]
+  claims               Claim[]
   overageCoveredAmount Decimal?         @db.Decimal(10, 2)
   overageCoveredAt     DateTime?
   onHoldUntil          DateTime?
@@ -289,4 +291,30 @@ model ContactMessage {
   createdAt DateTime @default(now())
 
   @@index([createdAt])
+}
+
+enum ClaimStatus {
+  OPEN
+  RESOLVED
+  REJECTED
+}
+
+model Claim {
+  id             String          @id @default(cuid())
+  bookingId      String
+  booking        Booking         @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  customerId     String
+  customer       CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  category       String
+  description    String
+  status         ClaimStatus     @default(OPEN)
+  resolutionNote String?
+  refundAmount   Decimal?        @db.Decimal(10, 2)
+  stripeRefundId String?
+  createdAt      DateTime        @default(now())
+  resolvedAt     DateTime?
+
+  @@index([customerId])
+  @@index([bookingId])
+  @@index([status])
 }

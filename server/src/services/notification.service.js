@@ -401,6 +401,48 @@ export const notifyContactReceived = ({ name, email, message }) => {
   });
 };
 
+export const notifyClaimRaised = (claim) => {
+  const name = esc(claim.customer?.user?.name) || 'A customer';
+  const email = claim.customer?.user?.email;
+  send({
+    to: env.contactEmail,
+    replyTo: email,
+    subject: `New claim raised — ${serviceTypeToClient(claim.booking?.serviceType)}`,
+    html: layout(`
+      ${h1('A customer raised a claim')}
+      ${detailTable(`
+        ${detail('From', name)}
+        ${detail('Service', serviceTypeToClient(claim.booking?.serviceType))}
+        ${detail('Reason', esc(claim.category))}
+      `)}
+      ${p(esc(claim.description).replace(/\n/g, '<br>'))}
+      ${btn('Review in admin', `${SITE}/admin/claims`)}
+    `)
+  });
+};
+
+export const notifyClaimResolved = (claim) => {
+  const email = claim.customer?.user?.email;
+  const name = esc(claim.customer?.user?.name) || 'there';
+  if (!email) return;
+
+  const resolved = claim.status === 'RESOLVED';
+  const refund = claim.refundAmount != null ? Number(claim.refundAmount) : 0;
+
+  send({
+    to: email,
+    subject: resolved ? 'Your claim has been resolved' : 'Update on your claim',
+    html: layout(`
+      ${h1(resolved ? `We've resolved your claim, ${name.split(' ')[0]}.` : `Update on your claim, ${name.split(' ')[0]}.`)}
+      ${p(`Regarding your ${serviceTypeToClient(claim.booking?.serviceType)} booking${claim.category ? ` (${esc(claim.category)})` : ''}:`)}
+      ${claim.resolutionNote ? p(`<strong>Our response:</strong> ${esc(claim.resolutionNote)}`) : ''}
+      ${resolved && refund > 0 ? detailTable(`${detail('Refund issued', `£${refund.toFixed(2)}`)}`) : ''}
+      ${resolved && refund > 0 ? p('The refund has been sent to your original payment method and typically appears within 5–10 days.') : ''}
+      ${btn('View your bookings', `${SITE}/customer/dashboard`)}
+    `)
+  });
+};
+
 export const notifyNewMessage = () => {
   // Real-time messaging is in-app — no email notification for individual messages
 };

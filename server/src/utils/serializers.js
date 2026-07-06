@@ -137,6 +137,25 @@ export const carerLinkToClient = (link, viewerId) => {
   };
 };
 
+export const claimToClient = (claim) => ({
+  id: claim.id,
+  bookingId: claim.bookingId,
+  category: claim.category,
+  description: claim.description,
+  status: enumToTitle(claim.status),
+  resolutionNote: claim.resolutionNote || null,
+  refundAmount: claim.refundAmount != null ? Number(claim.refundAmount) : null,
+  createdAt: claim.createdAt.toISOString(),
+  resolvedAt: claim.resolvedAt ? claim.resolvedAt.toISOString() : null,
+  customer: claim.customer ? { name: claim.customer.user?.name, email: claim.customer.user?.email } : null,
+  booking: claim.booking ? {
+    serviceType: serviceTypeToClient(claim.booking.serviceType),
+    date: claim.booking.date.toISOString().slice(0, 10),
+    price: Number(claim.booking.price),
+    status: bookingStatusToClient(claim.booking.status)
+  } : null
+});
+
 export const messageToClient = (message) => ({
   id: message.id,
   bookingId: message.bookingId,
