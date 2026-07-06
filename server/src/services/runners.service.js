@@ -16,7 +16,9 @@ export const updateRunnerStatus = async (runnerId, { status, rejectionReason }) 
     approvedAt: nextStatus === 'ACTIVE' ? new Date() : undefined,
     rejectedAt: nextStatus === 'REJECTED' ? new Date() : undefined,
     rejectionReason: nextStatus === 'REJECTED' ? (rejectionReason || 'Application was not approved.') : null,
-    suspendedAt: nextStatus === 'SUSPENDED' ? new Date() : null
+    suspendedAt: nextStatus === 'SUSPENDED' ? new Date() : null,
+    // Approving records that ID was verified; the documents themselves are purged below.
+    idVerifiedAt: nextStatus === 'ACTIVE' ? new Date() : undefined
   };
 
   const runner = await prisma.runnerProfile.update({
@@ -26,6 +28,11 @@ export const updateRunnerStatus = async (runnerId, { status, rejectionReason }) 
   }).catch(() => {
     throw new ApiError(404, 'Runner not found');
   });
+
+  // Data minimisation: once a decision is made, delete the verification documents.
+  if (nextStatus === 'ACTIVE' || nextStatus === 'REJECTED') {
+    await prisma.runnerDocument.deleteMany({ where: { runnerId } });
+  }
 
   if (nextStatus === 'ACTIVE') notifyRunnerApproved(runner.user);
   if (nextStatus === 'REJECTED') notifyRunnerRejected(runner.user, data.rejectionReason);

@@ -70,6 +70,17 @@ export const api = {
   messages: (id) => request(`/bookings/${id}/messages`),
   sendMessage: (id, data) => request(`/bookings/${id}/messages`, { method: 'POST', body: data }),
   runners: () => request('/runners'),
+  uploadRunnerDoc: (data) => request('/runners/documents', { method: 'POST', body: data }),
+  runnerDocsMine: () => request('/runners/documents/mine'),
+  runnerDocs: (runnerId) => request(`/runners/${runnerId}/documents`),
+  runnerDocObjectUrl: async (docId) => {
+    const token = getToken();
+    const res = await fetch(`${API_BASE_URL}/runners/documents/${docId}/file`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!res.ok) throw new ApiRequestError('Could not load document', res.status);
+    return URL.createObjectURL(await res.blob());
+  },
   updateRunner: (id, data) => request(`/runners/${id}/status`, { method: 'PATCH', body: data }),
   updateProfile: (role, id, data) => request(`/${role === 'runner' ? 'runners' : 'customers'}/${id}`, { method: 'PATCH', body: data }),
   customers: () => request('/customers'),

@@ -5,6 +5,7 @@ import BookingCard from '../components/BookingCard';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import AccountPrivacy from '../components/AccountPrivacy';
+import RunnerVerification from '../components/RunnerVerification';
 import { BarChartHorizontal, BarChartVertical } from '../components/Charts';
 import Modal from '../components/Modal';
 import { useApp } from '../context/AppContext';
@@ -148,7 +149,8 @@ export default function RunnerDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl bg-stone-900 p-5 text-white shadow-lift sm:p-6 dark:bg-zinc-900"><p className="text-xs font-semibold uppercase tracking-widest text-stone-400">Runner dashboard</p><h1 className="mt-2 text-2xl font-bold sm:text-3xl">{runner.name}</h1><p className="mt-1 text-stone-400">{runner.area} · Active runner</p></div>
+      <div className="rounded-2xl bg-stone-900 p-5 text-white shadow-lift sm:p-6 dark:bg-zinc-900"><p className="text-xs font-semibold uppercase tracking-widest text-stone-400">Runner dashboard</p><h1 className="mt-2 text-2xl font-bold sm:text-3xl">{runner.name}</h1><p className="mt-1 text-stone-400">{runner.area} · {runner.status === 'Active' ? 'Active runner' : `${runner.status} runner`}</p></div>
+      {runner.status === 'Pending' && <RunnerVerification />}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4"><Card><ClipboardList className="text-primary" /><p className="mt-3 text-sm font-bold text-muted">Available nearby</p><p className="text-3xl font-black">{available.length}</p></Card><Card><CheckCircle2 className="text-secondary" /><p className="mt-3 text-sm font-bold text-muted">Completed</p><p className="text-3xl font-black">{completed.length}</p></Card><Card><WalletCards className="text-primary" /><p className="mt-3 text-sm font-bold text-muted">Earnings</p><p className="text-3xl font-black">£{earnings.toFixed(0)}</p></Card><Card><Star className="text-amber-500" /><p className="mt-3 text-sm font-bold text-muted">Rating</p><p className="text-3xl font-black">{ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : runner.rating}</p></Card></div>
       <div className="flex justify-center">
         <div className="flex gap-2 overflow-x-auto rounded-xl bg-surface-hi p-2">

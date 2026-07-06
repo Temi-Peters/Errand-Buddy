@@ -5,6 +5,7 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import { BarChartHorizontal, BarChartVertical, DonutChart, MultiBarChart } from '../components/Charts';
 import StatusBadge from '../components/StatusBadge';
+import RunnerDocReview from '../components/RunnerDocReview';
 import { useApp } from '../context/AppContext';
 
 const tabs = ['Overview', 'Runner Management', 'All Bookings', 'Customers', 'Messages', 'Customer Feedback', 'Revenue'];
@@ -146,7 +147,7 @@ export default function Admin() {
             <p className="text-muted">{runnerDetail.email} · {runnerDetail.area}</p>
             <div className="mt-3 text-sm text-muted"><p><strong>Phone:</strong> {runnerDetail.phone || 'Not provided'}</p><p><strong>Transport:</strong> {runnerDetail.transportMethod || 'Not provided'}</p><p><strong>Bio:</strong> {runnerDetail.bio || 'Not provided'}</p></div>
             <h3 className="mt-4 font-bold">Task history</h3>
-            <div className="mt-2 space-y-2">{bookings.filter((booking) => booking.runnerId === runnerDetail.id).map((booking) => <div key={booking.id} className="rounded-lg bg-surface-hi p-3 text-sm"><strong>{booking.serviceType}</strong><p>{booking.date} · {booking.status}</p></div>)}</div></> : <p className="text-muted">No runners yet.</p>}
+            <div className="mt-2 space-y-2">{bookings.filter((booking) => booking.runnerId === runnerDetail.id).map((booking) => <div key={booking.id} className="rounded-lg bg-surface-hi p-3 text-sm"><strong>{booking.serviceType}</strong><p>{booking.date} · {booking.status}</p></div>)}</div><RunnerDocReview runner={runnerDetail} /></> : <p className="text-muted">No runners yet.</p>}
           </Card>
         </div>
       )}

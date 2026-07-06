@@ -18,6 +18,8 @@ import { contactRouter } from './routes/contact.routes.js';
 import { claimsRouter } from './routes/claims.routes.js';
 import { accountRouter } from './routes/account.routes.js';
 import { handleWebhook } from './controllers/payments.controller.js';
+import { upload as uploadRunnerDoc } from './controllers/runnerDocs.controller.js';
+import { requireAuth } from './middleware/auth.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 
 export const app = express();
@@ -39,6 +41,9 @@ app.use(helmet());
 
 // Stripe webhook needs the raw request body — must be registered BEFORE express.json()
 app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), handleWebhook);
+
+// Runner verification uploads need a larger body limit than the default JSON parser
+app.post('/api/runners/documents', express.json({ limit: '12mb' }), requireAuth, uploadRunnerDoc);
 
 app.use(express.json());
 
