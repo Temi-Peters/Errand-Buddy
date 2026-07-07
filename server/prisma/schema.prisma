@@ -313,6 +313,13 @@ model ContactMessage {
   @@index([createdAt])
 }
 
+model BlockedEmail {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  reason    String?
+  createdAt DateTime @default(now())
+}
+
 enum ClaimStatus {
   OPEN
   RESOLVED

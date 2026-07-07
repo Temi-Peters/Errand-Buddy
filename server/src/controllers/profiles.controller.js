@@ -1,7 +1,7 @@
 import { prisma } from '../config/prisma.js';
 import { ApiError } from '../middleware/errorHandler.js';
 import { customerToClient, runnerToClient } from '../utils/serializers.js';
-import { updateRunnerStatus } from '../services/runners.service.js';
+import { updateRunnerStatus, rejectRunner as rejectRunnerService } from '../services/runners.service.js';
 
 export const runners = async (req, res, next) => {
   try {
@@ -196,6 +196,14 @@ export const updateRunnerProfile = async (req, res, next) => {
 export const updateRunner = async (req, res, next) => {
   try {
     res.json({ runner: await updateRunnerStatus(req.params.id, req.body) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const rejectRunner = async (req, res, next) => {
+  try {
+    res.json(await rejectRunnerService(req.params.id, req.body));
   } catch (error) {
     next(error);
   }

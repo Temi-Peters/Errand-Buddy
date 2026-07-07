@@ -289,6 +289,17 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const rejectRunner = async (runnerId, { reason, blockEmail } = {}) => {
+    try {
+      await api.rejectRunner(runnerId, { reason, blockEmail });
+      setRunners((current) => current.filter((runner) => runner.id !== runnerId));
+      showToast(blockEmail ? 'Application rejected and email blocked' : 'Application rejected');
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  };
+
   const fetchTemplates = async () => {
     try {
       const response = await api.templates();
@@ -506,6 +517,7 @@ export const AppProvider = ({ children }) => {
     fetchMessages,
     sendMessage,
     updateRunnerStatus,
+    rejectRunner,
     updateProfile,
     fetchWallet,
     setWallet,

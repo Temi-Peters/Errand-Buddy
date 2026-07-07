@@ -19,6 +19,11 @@ export const registerUser = async (data) => {
     throw new ApiError(400, 'Name, email, and password are required');
   }
 
+  const blocked = await prisma.blockedEmail.findUnique({ where: { email: data.email.toLowerCase() } });
+  if (blocked) {
+    throw new ApiError(403, 'This email address cannot be used to register.');
+  }
+
   const existing = await prisma.user.findUnique({ where: { email: data.email.toLowerCase() } });
   if (existing) {
     throw new ApiError(409, 'An account with this email already exists');
