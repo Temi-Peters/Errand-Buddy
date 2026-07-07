@@ -76,7 +76,17 @@ export default function RunnerDashboard() {
   }, [contact]);
 
   if (!runner) return <Card className="text-center"><p className="font-bold text-muted">Runner profile is loading.</p></Card>;
-  if (runner.status === 'Pending') return <Card className="mx-auto max-w-2xl p-8 text-center"><ClipboardList className="mx-auto text-primary" size={42} /><h1 className="mt-4 text-3xl font-black">Application under review</h1><p className="mt-3 text-muted">Thanks for applying to become an ErrandBuddy runner. We are reviewing your application and will contact you when a decision is made.</p></Card>;
+  if (runner.status === 'Pending') return (
+    <div className="mx-auto max-w-2xl space-y-6">
+      <div className="text-center">
+        <ClipboardList className="mx-auto text-primary" size={42} />
+        <h1 className="mt-4 text-3xl font-black text-ink">Almost there, {runner.name.split(' ')[0]}.</h1>
+        <p className="mt-2 text-muted">One last step — verify your identity below so our team can approve you as a runner.</p>
+      </div>
+      <RunnerVerification />
+      <AvatarUpload profile={runner} />
+    </div>
+  );
   if (runner.status === 'Rejected') return <Card className="mx-auto max-w-2xl p-8 text-center"><h1 className="text-3xl font-black">Application not approved</h1><p className="mt-3 text-muted">{runner.rejectionReason || 'Your application was not approved. Contact support if you have questions.'}</p></Card>;
   if (runner.status === 'Suspended') return <Card className="mx-auto max-w-2xl p-8 text-center"><h1 className="text-3xl font-black">Runner account suspended</h1><p className="mt-3 text-muted">Your runner account is currently suspended. Please contact support for help.</p></Card>;
 
@@ -163,7 +173,6 @@ export default function RunnerDashboard() {
           <p className="mt-1 text-stone-400">{runner.area} · {runner.status === 'Active' ? 'Active runner' : `${runner.status} runner`}</p>
         </div>
       </div>
-      {runner.status === 'Pending' && <RunnerVerification />}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4"><Card><ClipboardList className="text-primary" /><p className="mt-3 text-sm font-bold text-muted">Available nearby</p><p className="text-3xl font-black">{available.length}</p></Card><Card><CheckCircle2 className="text-secondary" /><p className="mt-3 text-sm font-bold text-muted">Completed</p><p className="text-3xl font-black">{completed.length}</p></Card><Card><WalletCards className="text-primary" /><p className="mt-3 text-sm font-bold text-muted">Earnings</p><p className="text-3xl font-black">£{earnings.toFixed(0)}</p></Card><Card><Star className="text-amber-500" /><p className="mt-3 text-sm font-bold text-muted">Rating</p><p className="text-3xl font-black">{ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : runner.rating}</p></Card></div>
       <div className="flex justify-center">
         <div className="flex gap-2 overflow-x-auto rounded-xl bg-surface-hi p-2">
