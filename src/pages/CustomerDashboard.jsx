@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import AccountPrivacy from '../components/AccountPrivacy';
+import AvatarUpload from '../components/AvatarUpload';
 import BookingCard from '../components/BookingCard';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -698,6 +699,7 @@ export default function CustomerDashboard() {
       {/* ── Account ───────────────────────────────────────────────────────── */}
       {activeTab === 'Account' && (
         <div className="space-y-4">
+          <AvatarUpload profile={customer} />
           <Card>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-ink">Personal details</h2>
