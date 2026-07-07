@@ -114,7 +114,7 @@ export const updateCustomer = async (req, res, next) => {
     const profile = await prisma.customerProfile.findUnique({ where: { id }, include: { user: true } });
     if (!profile) throw new ApiError(404, 'Customer not found');
 
-    const { name, email, phone, address, postcodeArea } = req.body;
+    const { name, email, phone, address, postcodeArea, avatarUrl } = req.body;
 
     // Update user-level fields (name, email) if provided
     if (name || email) {
@@ -133,6 +133,7 @@ export const updateCustomer = async (req, res, next) => {
     if (phone !== undefined) profileUpdates.phone = phone.trim();
     if (address !== undefined) profileUpdates.address = address.trim();
     if (postcodeArea !== undefined) profileUpdates.postcodeArea = postcodeArea.trim();
+    if (avatarUrl !== undefined) profileUpdates.avatarUrl = avatarUrl || null;
 
     const updated = await prisma.customerProfile.update({
       where: { id },
@@ -159,7 +160,7 @@ export const updateRunnerProfile = async (req, res, next) => {
     const profile = await prisma.runnerProfile.findUnique({ where: { id }, include: { user: true } });
     if (!profile) throw new ApiError(404, 'Runner not found');
 
-    const { name, email, phone, area, bio, transportMethod, availabilityNotes } = req.body;
+    const { name, email, phone, area, bio, transportMethod, availabilityNotes, avatarUrl } = req.body;
 
     if (name || email) {
       const userUpdates = {};
@@ -178,6 +179,7 @@ export const updateRunnerProfile = async (req, res, next) => {
     if (bio !== undefined) profileUpdates.bio = bio.trim();
     if (transportMethod !== undefined) profileUpdates.transportMethod = transportMethod.trim();
     if (availabilityNotes !== undefined) profileUpdates.availabilityNotes = availabilityNotes.trim();
+    if (avatarUrl !== undefined) profileUpdates.avatarUrl = avatarUrl || null;
 
     const updated = await prisma.runnerProfile.update({
       where: { id },

@@ -59,7 +59,8 @@ export const customerToClient = (customer) => ({
   email: customer.user.email,
   address: customer.address,
   phone: customer.phone,
-  postcodeArea: customer.postcodeArea
+  postcodeArea: customer.postcodeArea,
+  avatarUrl: customer.avatarUrl || null
 });
 
 export const runnerToClient = (runner) => ({
@@ -79,7 +80,9 @@ export const runnerToClient = (runner) => ({
   rejectedAt: runner.rejectedAt,
   rejectionReason: runner.rejectionReason,
   suspendedAt: runner.suspendedAt,
-  stripeAccountId: runner.stripeAccountId
+  stripeAccountId: runner.stripeAccountId,
+  avatarUrl: runner.avatarUrl || null,
+  verified: Boolean(runner.idVerifiedAt)
 });
 
 export const bookingToClient = (booking) => ({

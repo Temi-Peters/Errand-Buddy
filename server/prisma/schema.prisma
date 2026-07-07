@@ -99,6 +99,7 @@ model CustomerProfile {
   address            String
   phone              String
   postcodeArea       String
+  avatarUrl          String?
   walletBalance      Decimal              @default(0) @db.Decimal(10, 2)
   bookings           Booking[]
   reviews            Review[]
@@ -145,6 +146,7 @@ model RunnerProfile {
   suspendedAt     DateTime?
   stripeAccountId String?
   idVerifiedAt    DateTime?
+  avatarUrl       String?
   bookings        Booking[]
   reviews         Review[]
   documents       RunnerDocument[]

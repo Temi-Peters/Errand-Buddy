@@ -1,6 +1,8 @@
-import { Calendar, Clock, HeartHandshake, MapPin, ShoppingBag, UserRound } from 'lucide-react';
+import { Calendar, Clock, HeartHandshake, MapPin, ShoppingBag } from 'lucide-react';
 import Card from './Card';
 import StatusBadge from './StatusBadge';
+import Avatar from './Avatar';
+import VerifiedBadge from './VerifiedBadge';
 
 export default function BookingCard({ booking, runner, customer, actions }) {
   return (
@@ -27,8 +29,8 @@ export default function BookingCard({ booking, runner, customer, actions }) {
         <p className="flex items-center gap-2"><Calendar size={16} /> {booking.date}</p>
         <p className="flex items-center gap-2"><Clock size={16} /> {booking.time}</p>
         <p className="flex items-center gap-2"><MapPin size={16} /> {booking.postcodeArea}</p>
-        {runner && <p className="flex items-center gap-2"><UserRound size={16} /> {runner.name}</p>}
-        {customer && <p className="flex items-center gap-2"><UserRound size={16} /> {customer.name}</p>}
+        {runner && <p className="flex items-center gap-2"><Avatar url={runner.avatarUrl} name={runner.name} size={20} /> {runner.name}{runner.verified && <VerifiedBadge label="" className="px-1 py-1" />}</p>}
+        {customer && <p className="flex items-center gap-2"><Avatar url={customer.avatarUrl} name={customer.name} size={20} /> {customer.name}</p>}
         {booking.goodsCost != null && <p className="flex items-center gap-2"><ShoppingBag size={16} /> Goods: £{booking.goodsCost.toFixed(2)}</p>}
       </div>
       {actions && <div className="mt-5 flex flex-wrap gap-2 border-t border-surface-hi pt-4">{actions}</div>}
