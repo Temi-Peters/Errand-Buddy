@@ -82,6 +82,7 @@ export const api = {
     return URL.createObjectURL(await res.blob());
   },
   updateRunner: (id, data) => request(`/runners/${id}/status`, { method: 'PATCH', body: data }),
+  rejectRunner: (id, data) => request(`/runners/${id}/reject`, { method: 'POST', body: data }),
   updateProfile: (role, id, data) => request(`/${role === 'runner' ? 'runners' : 'customers'}/${id}`, { method: 'PATCH', body: data }),
   customers: () => request('/customers'),
   adminOverview: () => request('/admin/overview'),
