@@ -79,6 +79,7 @@ export const exportAccountData = async (user) => {
 
 // Right to erasure — password-confirmed hard delete (cascades all personal data).
 export const deleteAccount = async (user, password) => {
+  if (user.role === 'ADMIN') throw new ApiError(403, 'Admin accounts cannot be deleted this way.');
   if (!password) throw new ApiError(400, 'Your password is required to delete your account');
 
   const fresh = await prisma.user.findUnique({ where: { id: user.id } });
