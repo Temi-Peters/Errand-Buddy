@@ -126,30 +126,36 @@ export const runnerConnect = async (req, res, next) => {
 
     let stripeAccountId = runner.stripeAccountId;
 
-    // Create a new Connect account if the runner doesn't have one yet
-    if (!stripeAccountId) {
-      const account = await createConnectAccount({
-        email: runner.user.email,
-        name: runner.user.name
-      });
-      stripeAccountId = account.id;
+    try {
+      // Create a new Connect account if the runner doesn't have a real one yet
+      // (demo/seed runners carry a placeholder acct_demo_* id).
+      if (!stripeAccountId || stripeAccountId.startsWith('acct_demo_')) {
+        const account = await createConnectAccount({
+          email: runner.user.email,
+          name: runner.user.name
+        });
+        stripeAccountId = account.id;
 
-      await prisma.runnerProfile.update({
-        where: { id: runner.id },
-        data: { stripeAccountId }
+        await prisma.runnerProfile.update({
+          where: { id: runner.id },
+          data: { stripeAccountId }
+        });
+      }
+
+      const returnUrl = `${env.appUrl}/runner/dashboard?connect=success`;
+      const refreshUrl = `${env.appUrl}/runner/dashboard?connect=refresh`;
+
+      const accountLink = await createAccountLink({
+        accountId: stripeAccountId,
+        returnUrl,
+        refreshUrl
       });
+
+      res.json({ url: accountLink.url });
+    } catch (stripeErr) {
+      console.error('[connect] Stripe error:', stripeErr.message);
+      throw new ApiError(503, 'Payout setup isn\'t available yet — runner payouts activate when ErrandBuddy goes live.');
     }
-
-    const returnUrl = `${env.appUrl}/runner/dashboard?connect=success`;
-    const refreshUrl = `${env.appUrl}/runner/dashboard?connect=refresh`;
-
-    const accountLink = await createAccountLink({
-      accountId: stripeAccountId,
-      returnUrl,
-      refreshUrl
-    });
-
-    res.json({ url: accountLink.url });
   } catch (err) {
     next(err);
   }
@@ -168,18 +174,24 @@ export const runnerConnectStatus = async (req, res, next) => {
       where: { id: req.user.runnerProfile.id }
     });
 
-    if (!runner?.stripeAccountId) {
+    // No real account yet (or a demo placeholder) → not connected.
+    if (!runner?.stripeAccountId || runner.stripeAccountId.startsWith('acct_demo_')) {
       return res.json({ connected: false });
     }
 
-    const account = await retrieveAccount(runner.stripeAccountId);
-
-    res.json({
-      connected: true,
-      detailsSubmitted: account.details_submitted,
-      payoutsEnabled: account.payouts_enabled,
-      chargesEnabled: account.charges_enabled
-    });
+    try {
+      const account = await retrieveAccount(runner.stripeAccountId);
+      res.json({
+        connected: true,
+        detailsSubmitted: account.details_submitted,
+        payoutsEnabled: account.payouts_enabled,
+        chargesEnabled: account.charges_enabled
+      });
+    } catch (stripeErr) {
+      // Stale/invalid account or Connect not configured — treat as not connected rather than error.
+      console.error('[connect-status] Stripe error:', stripeErr.message);
+      res.json({ connected: false });
+    }
   } catch (err) {
     next(err);
   }
