@@ -24,6 +24,11 @@ import { errorHandler, notFound } from './middleware/errorHandler.js';
 
 export const app = express();
 
+// Render terminates TLS at a single proxy hop. Without this, req.ip is the proxy's
+// address for EVERY request, so the rate limiters below collapse into one global
+// bucket shared by all users instead of being per-client.
+app.set('trust proxy', 1);
+
 const allowedOrigins = env.clientUrl.split(',').map((origin) => origin.trim()).filter(Boolean);
 
 app.use(cors({
@@ -47,16 +52,23 @@ app.post('/api/runners/documents', express.json({ limit: '12mb' }), requireAuth,
 
 app.use(express.json());
 
+// The dashboard polls three endpoints every 45s (see AppContext), so a single
+// active user legitimately spends ~60 requests per window before touching
+// anything. Several people sharing one NAT — a church hall's wi-fi — share this
+// bucket, so the limit is set for that case rather than for a single user.
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: env.nodeEnv === 'production' ? 300 : 1000,
+  limit: env.nodeEnv === 'production' ? 1000 : 2000,
   standardHeaders: true,
   legacyHeaders: false
 });
 
+// Only failed auth attempts count, so a group signing up together on one network
+// can't lock each other out — while brute-forcing a single account still trips.
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: env.nodeEnv === 'production' ? 20 : 100,
+  limit: env.nodeEnv === 'production' ? 50 : 200,
+  skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false
 });

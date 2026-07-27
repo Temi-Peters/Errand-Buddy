@@ -68,7 +68,15 @@ export const customers = async (req, res, next) => {
     // Non-admins only ever need themselves plus the customers on bookings they can
     // see (runners need their assigned/area customers; carers need their clients).
     const ids = new Set();
-    if (user.customerProfile) ids.add(user.customerProfile.id);
+    // Contact details (email/phone/address) are only ever exposed for customers the
+    // caller has a real relationship with. A runner browsing the open queue can see
+    // that a job exists in their area, but NOT the customer's doorstep — that is
+    // only unlocked by actually being assigned to the booking.
+    const contactVisibleIds = new Set();
+    if (user.customerProfile) {
+      ids.add(user.customerProfile.id);
+      contactVisibleIds.add(user.customerProfile.id);
+    }
 
     let where = null;
     if (user.role === 'RUNNER' && user.runnerProfile?.status === 'ACTIVE') {
@@ -85,8 +93,18 @@ export const customers = async (req, res, next) => {
     }
 
     if (where) {
-      const bookings = await prisma.booking.findMany({ where, select: { customerId: true } });
-      bookings.forEach((b) => ids.add(b.customerId));
+      const bookings = await prisma.booking.findMany({
+        where,
+        select: { customerId: true, runnerId: true }
+      });
+      bookings.forEach((booking) => {
+        ids.add(booking.customerId);
+        // A runner earns contact details only on bookings assigned to them; a
+        // customer/carer already only matches their own bookings.
+        if (user.role !== 'RUNNER' || booking.runnerId === user.runnerProfile?.id) {
+          contactVisibleIds.add(booking.customerId);
+        }
+      });
     }
 
     const profiles = await prisma.customerProfile.findMany({
@@ -95,7 +113,17 @@ export const customers = async (req, res, next) => {
       orderBy: { user: { name: 'asc' } }
     });
 
-    res.json({ customers: profiles.map(customerToClient) });
+    const result = profiles.map((profile) => {
+      const dto = customerToClient(profile);
+      if (!contactVisibleIds.has(profile.id)) {
+        delete dto.email;
+        delete dto.phone;
+        delete dto.address;
+      }
+      return dto;
+    });
+
+    res.json({ customers: result });
   } catch (error) {
     next(error);
   }

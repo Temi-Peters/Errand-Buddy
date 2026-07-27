@@ -149,7 +149,12 @@ export default function RunnerDashboard() {
         customer={customer}
         actions={(
           <>
-            <div className="w-full text-sm text-muted"><p><strong>Address:</strong> {booking.address}</p><p><strong>Phone:</strong> {booking.contactPhone}</p><p><strong>Instructions:</strong> {booking.instructions}</p></div>
+            <div className="w-full text-sm text-muted">
+              {booking.address
+                ? <><p><strong>Address:</strong> {booking.address}</p><p><strong>Phone:</strong> {booking.contactPhone}</p></>
+                : <p><strong>Area:</strong> {booking.postcodeArea} · full address and contact details are shared once you accept this task</p>}
+              <p><strong>Instructions:</strong> {booking.instructions}</p>
+            </div>
             {booking.status === 'Assigned' && <Button onClick={() => updateBooking(booking.id, { status: 'In Progress' })}>Start Task</Button>}
             {booking.status === 'In Progress' && <Button variant="secondary" onClick={() => { setCompletingBooking(booking); setGoodsCost(''); }}>Mark Complete</Button>}
             {booking.status === 'In Progress' && <Button variant="outline" onClick={() => setContact({ booking, customer })}><MessageSquare size={18} /> Contact Customer</Button>}
