@@ -12,8 +12,9 @@ const tabs = ['Overview', 'Runner Management', 'All Bookings', 'Customers', 'Mes
 const statuses = ['All', 'Pending Payment', 'Pending', 'Assigned', 'In Progress', 'Completed', 'Cancelled'];
 
 export default function Admin() {
-  const { bookings, customers, runners, updateBooking, updateRunnerStatus, showToast } = useApp();
+  const { bookings, customers, runners, updateBooking, updateRunnerStatus, adminDeleteUser, showToast } = useApp();
   const [activeTab, setActiveTab] = useState(tabs[0]);
+  const [deletingUserId, setDeletingUserId] = useState(null);
   const [statusFilter, setStatusFilter] = useState('All');
   const [selectedRunner, setSelectedRunner] = useState(runners[0]);
   const filteredBookings = statusFilter === 'All' ? bookings : bookings.filter((booking) => booking.status === statusFilter);
@@ -65,6 +66,35 @@ export default function Admin() {
   };
 
   const customerName = (id) => customers.find((customer) => customer.id === id)?.name || 'Unknown';
+
+  // Deletion is permanent and cascades everything the person has. Two-step: a
+  // plain confirm, then a second one only if the server reports live bookings.
+  const removeAccount = async (person, kind) => {
+    if (!person?.userId) {
+      showToast('Cannot delete: missing user id for this record', 'error');
+      return;
+    }
+    if (!window.confirm(`Permanently delete ${person.name}'s ${kind} account?\n\nThis erases their profile, bookings, messages and reviews. It cannot be undone.`)) return;
+
+    const reason = window.prompt('Reason (optional — included in the email to them):', '') ?? '';
+
+    setDeletingUserId(person.userId);
+    try {
+      await adminDeleteUser(person.userId, { reason });
+    } catch (error) {
+      if (error.status === 409) {
+        if (window.confirm(`${error.message}\n\nDelete anyway?`)) {
+          try {
+            await adminDeleteUser(person.userId, { reason, force: true });
+          } catch {
+            // adminDeleteUser has already surfaced this one.
+          }
+        }
+      }
+    } finally {
+      setDeletingUserId(null);
+    }
+  };
   const runnerName = (id) => runners.find((runner) => runner.id === id)?.name || 'Unassigned';
   const runnerDetail = selectedRunner || runners[0];
 
@@ -139,7 +169,7 @@ export default function Admin() {
           <Card className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-left text-sm">
               <thead><tr className="text-muted"><th className="p-2">Name</th><th>Area</th><th>Rating</th><th>Completed</th><th>Status</th><th>Actions</th></tr></thead>
-              <tbody>{runners.map((runner) => <tr key={runner.id} onClick={() => setSelectedRunner(runner)} className="cursor-pointer border-t border-surface-hi hover:bg-surface-hi"><td className="p-2 font-bold">{runner.name}<span className="block font-normal text-muted">{runner.email}</span></td><td>{runner.area}</td><td>{runner.rating}</td><td>{runner.completedTasks}</td><td><StatusBadge status={runner.status} /></td><td className="space-x-2">{runner.status === 'Pending' && <><Button onClick={(event) => { event.stopPropagation(); updateRunnerStatus(runner.id, 'ACTIVE'); }}>Approve</Button><Button variant="outline" onClick={(event) => { event.stopPropagation(); setSelectedRunner(runner); }}>Review</Button></>}{runner.status === 'Active' && <Button variant="outline" onClick={(event) => { event.stopPropagation(); updateRunnerStatus(runner.id, 'SUSPENDED'); }}>Suspend</Button>}{runner.status === 'Suspended' && <Button variant="outline" onClick={(event) => { event.stopPropagation(); updateRunnerStatus(runner.id, 'ACTIVE'); }}>Reactivate</Button>}</td></tr>)}</tbody>
+              <tbody>{runners.map((runner) => <tr key={runner.id} onClick={() => setSelectedRunner(runner)} className="cursor-pointer border-t border-surface-hi hover:bg-surface-hi"><td className="p-2 font-bold">{runner.name}<span className="block font-normal text-muted">{runner.email}</span></td><td>{runner.area}</td><td>{runner.rating}</td><td>{runner.completedTasks}</td><td><StatusBadge status={runner.status} /></td><td className="space-x-2">{runner.status === 'Pending' && <><Button onClick={(event) => { event.stopPropagation(); updateRunnerStatus(runner.id, 'ACTIVE'); }}>Approve</Button><Button variant="outline" onClick={(event) => { event.stopPropagation(); setSelectedRunner(runner); }}>Review</Button></>}{runner.status === 'Active' && <Button variant="outline" onClick={(event) => { event.stopPropagation(); updateRunnerStatus(runner.id, 'SUSPENDED'); }}>Suspend</Button>}{runner.status === 'Suspended' && <Button variant="outline" onClick={(event) => { event.stopPropagation(); updateRunnerStatus(runner.id, 'ACTIVE'); }}>Reactivate</Button>}<Button variant="danger" loading={deletingUserId === runner.userId} onClick={(event) => { event.stopPropagation(); removeAccount(runner, 'runner'); }}>Delete</Button></td></tr>)}</tbody>
             </table>
           </Card>
           <Card>
@@ -162,7 +192,7 @@ export default function Admin() {
         </Card>
       )}
 
-      {activeTab === 'Customers' && <Card className="overflow-x-auto"><table className="w-full min-w-[640px] text-left text-sm"><thead><tr className="text-muted"><th className="p-2">Customer</th><th>Email</th><th>Phone</th><th>Bookings</th></tr></thead><tbody>{customers.map((customer) => <tr key={customer.id} className="border-t border-surface-hi"><td className="p-2 font-bold">{customer.name}<span className="block font-normal text-muted">{customer.address}</span></td><td>{customer.email}</td><td>{customer.phone}</td><td>{bookings.filter((booking) => booking.customerId === customer.id).length}</td></tr>)}</tbody></table></Card>}
+      {activeTab === 'Customers' && <Card className="overflow-x-auto"><table className="w-full min-w-[640px] text-left text-sm"><thead><tr className="text-muted"><th className="p-2">Customer</th><th>Email</th><th>Phone</th><th>Bookings</th><th>Actions</th></tr></thead><tbody>{customers.map((customer) => <tr key={customer.id} className="border-t border-surface-hi"><td className="p-2 font-bold">{customer.name}<span className="block font-normal text-muted">{customer.address}</span></td><td>{customer.email}</td><td>{customer.phone}</td><td>{bookings.filter((booking) => booking.customerId === customer.id).length}</td><td><Button variant="danger" loading={deletingUserId === customer.userId} onClick={() => removeAccount(customer, 'customer')}>Delete</Button></td></tr>)}</tbody></table></Card>}
       {activeTab === 'Messages' && <Card className="text-center"><MessageSquare className="mx-auto text-primary" /><h2 className="mt-3 text-xl font-bold">Message threads</h2><p className="mt-2 text-muted">Admin support visibility is available through booking conversations in the API. A threaded support inbox can be added after launch.</p></Card>}
       {activeTab === 'Customer Feedback' && <div className="grid gap-4">{feedback.length ? feedback.map((booking) => <Card key={booking.id}><div className="flex flex-wrap justify-between gap-3"><div><h3 className="font-bold">{booking.serviceType}</h3><p className="text-muted">{customerName(booking.customerId)} about {runnerName(booking.runnerId)}</p></div><p className="font-black text-secondary">{booking.rating.stars} stars</p></div><p className="mt-3 text-muted">{booking.rating.review}</p></Card>) : <Card><p className="text-muted">No feedback yet.</p></Card>}</div>}
       {activeTab === 'Revenue' && (

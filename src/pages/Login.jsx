@@ -38,7 +38,10 @@ export default function Login() {
             <input className="focus-ring mt-2 min-h-11 w-full rounded-lg border border-slate-200 px-3" type="email" value={form.email} onChange={(e) => update('email', e.target.value)} required />
           </label>
           <label className="block">
-            <span className="font-semibold">Password</span>
+            <div className="flex items-baseline justify-between">
+              <span className="font-semibold">Password</span>
+              <Link className="text-sm font-semibold text-primary hover:underline" to="/forgot-password">Forgot password?</Link>
+            </div>
             <input className="focus-ring mt-2 min-h-11 w-full rounded-lg border border-slate-200 px-3" type="password" value={form.password} onChange={(e) => update('password', e.target.value)} required />
           </label>
           <Button className="w-full" type="submit" loading={loading}>Log in</Button>

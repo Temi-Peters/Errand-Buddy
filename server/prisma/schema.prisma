@@ -71,13 +71,33 @@ model User {
   email           String           @unique
   passwordHash    String
   role            UserRole
+  // Set whenever the password changes. Tokens issued before this moment are
+  // rejected at auth time, so a reset actually logs out anyone already holding a
+  // token for the account rather than leaving them signed in until it expires.
+  passwordChangedAt DateTime?
   customerProfile CustomerProfile?
   runnerProfile   RunnerProfile?
   sentMessages    Message[]        @relation("SentMessages")
   receivedMessages Message[]       @relation("ReceivedMessages")
   pushSubscriptions PushSubscription[]
+  passwordResetTokens PasswordResetToken[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
+}
+
+// Only the SHA-256 hash of the reset token is stored, so a leak of this table
+// can't be used to reset anyone's password. Tokens are single-use and short-lived.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model PushSubscription {

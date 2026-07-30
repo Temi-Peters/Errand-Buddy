@@ -5,6 +5,8 @@ import Book from './pages/Book';
 import CustomerDashboard from './pages/CustomerDashboard';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Register from './pages/Register';
 import RunnerDashboard from './pages/RunnerDashboard';
 import Services from './pages/Services';
@@ -45,6 +47,8 @@ export default function App() {
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/become-a-runner" element={<BecomeRunner />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/register" element={<Register />} />
         <Route path="/welcome" element={<ProtectedRoute role="customer"><Welcome /></ProtectedRoute>} />
         <Route path="/book" element={<Book />} />
