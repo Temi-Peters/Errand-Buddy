@@ -443,8 +443,23 @@ export const notifyClaimResolved = (claim) => {
   });
 };
 
-export const notifyNewMessage = () => {
-  // Real-time messaging is in-app — no email notification for individual messages
+// In-app chat has no polling loop, so a message the recipient isn't already
+// looking at would otherwise go unseen. No email — a push per message is enough,
+// and tagging by booking collapses a rapid exchange into one notification.
+export const notifyNewMessage = (message) => {
+  const receiver = message?.receiver;
+  if (!receiver?.id) return;
+
+  const senderName = esc(message.sender?.name) || 'Someone';
+  const preview = String(message.body ?? '').trim();
+  const body = preview.length > 120 ? `${preview.slice(0, 117)}…` : preview;
+
+  sendPushToUser(receiver.id, {
+    title: `Message from ${senderName}`,
+    body: body || 'You have a new message about your errand.',
+    url: receiver.role === 'RUNNER' ? RUNNER_URL : CUSTOMER_URL,
+    tag: `message-${message.bookingId}`
+  });
 };
 
 export const notifyReviewSubmitted = () => {

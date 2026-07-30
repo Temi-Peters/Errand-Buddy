@@ -78,7 +78,11 @@ export const listBookings = async (user) => {
     orderBy: [{ date: 'desc' }, { createdAt: 'desc' }]
   });
 
-  return bookings.map(bookingToClient);
+  // A runner sees unassigned jobs in their area so they can accept them, but the
+  // customer's address and contact details stay hidden until they're assigned.
+  return bookings.map((booking) => bookingToClient(booking, {
+    redactCustomerContact: user.role === 'RUNNER' && booking.runnerId !== user.runnerProfile.id
+  }));
 };
 
 // Services open for customer booking — update here when new services launch

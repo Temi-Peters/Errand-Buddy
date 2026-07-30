@@ -85,7 +85,11 @@ export const runnerToClient = (runner) => ({
   verified: Boolean(runner.idVerifiedAt)
 });
 
-export const bookingToClient = (booking) => ({
+// redactCustomerContact hides the doorstep — full address, contact phone and the
+// nested customer record — for viewers who can see that a booking EXISTS without
+// being party to it (a runner browsing unassigned jobs in their area). The
+// postcode area is kept so they can still judge whether the job is worth taking.
+export const bookingToClient = (booking, { redactCustomerContact = false } = {}) => ({
   id: booking.id,
   customerId: booking.customerId,
   runnerId: booking.runnerId,
@@ -97,8 +101,8 @@ export const bookingToClient = (booking) => ({
   status: bookingStatusToClient(booking.status),
   rating: booking.review ? { stars: booking.review.stars, review: booking.review.review } : null,
   instructions: booking.instructions,
-  address: booking.address,
-  contactPhone: booking.contactPhone,
+  address: redactCustomerContact ? null : booking.address,
+  contactPhone: redactCustomerContact ? null : booking.contactPhone,
   postcodeArea: booking.postcodeArea,
   goodsCost: booking.goodsCost != null ? Number(booking.goodsCost) : null,
   createdByCarerId: booking.createdByCarerId || null,
@@ -107,7 +111,7 @@ export const bookingToClient = (booking) => ({
     name: booking.createdByCarer.user?.name,
     email: booking.createdByCarer.user?.email
   } : null,
-  customer: booking.customer ? customerToClient(booking.customer) : undefined,
+  customer: booking.customer && !redactCustomerContact ? customerToClient(booking.customer) : undefined,
   runner: booking.runner ? runnerToClient(booking.runner) : undefined,
   payment: booking.payment ? {
     id: booking.payment.id,
