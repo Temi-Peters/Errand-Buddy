@@ -53,6 +53,20 @@ export const AppProvider = ({ children }) => {
     setToken(null);
   };
 
+  // The service-unavailable screen replaces the whole app, and nothing else
+  // clears the flag unless a logged-in refresh succeeds — so without this a
+  // logged-out visitor who hits one blip is stranded until they reload by hand.
+  const retryConnection = async () => {
+    try {
+      await api.health();
+      setServiceUnavailable(false);
+      if (authUser) await refreshFromApi(authUser, { silent: true });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const handleApiError = (error) => {
     if (error instanceof ApiUnavailableError) {
       setServiceUnavailable(true);
@@ -537,6 +551,7 @@ export const AppProvider = ({ children }) => {
     sendMessage,
     updateRunnerStatus,
     adminDeleteUser,
+    retryConnection,
     rejectRunner,
     updateProfile,
     fetchWallet,
