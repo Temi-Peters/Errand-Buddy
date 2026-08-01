@@ -65,6 +65,27 @@ export const loginSchema = z.object({
   })
 });
 
+export const forgotPasswordSchema = z.object({
+  body: z.object({
+    email: z.string().trim().email('Enter a valid email').transform((value) => value.toLowerCase())
+  })
+});
+
+export const resetPasswordSchema = z.object({
+  body: z.object({
+    token: z.string().trim().min(1, 'Reset token is required'),
+    password: z.string().min(8, 'Password must be at least 8 characters')
+  })
+});
+
+export const adminDeleteUserSchema = z.object({
+  params: z.object({ id: z.string().trim().min(1, 'User id is required') }),
+  body: z.object({
+    reason: z.string().trim().max(500, 'Reason must be 500 characters or fewer').optional(),
+    force: z.boolean().optional()
+  }).optional().default({})
+});
+
 export const createBookingSchema = z.object({
   body: z.object({
     serviceType: serviceTypeSchema,

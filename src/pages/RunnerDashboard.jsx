@@ -16,6 +16,13 @@ import { areas } from '../data/options';
 
 const tabs = ['Available Tasks', 'My Tasks', 'Earnings', 'Messages', 'Profile'];
 const payout = (price) => Math.round(price * 0.9 * 100) / 100;
+// Always two decimals — a £15 job was showing "£13.5", which reads as a bug.
+const money = (value) => Number(value || 0).toFixed(2);
+// Works on both iOS and Android without needing to detect the platform.
+const mapsUrl = (address) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+// Soonest first — a runner works forwards through the day, and the server hands
+// bookings back newest-first, which put today's job at the bottom of the list.
+const bySoonest = (a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`);
 
 export default function RunnerDashboard() {
   const { authUser, runners, customers, bookings, updateBooking, acceptBooking, completeRunnerTask, fetchMessages, sendMessage, updateProfile, showToast, enablePush } = useApp();
@@ -93,8 +100,9 @@ export default function RunnerDashboard() {
   const available = bookings.filter((booking) => booking.status === 'Pending' && !booking.runnerId && booking.postcodeArea === runner.area);
   const myTasks = bookings.filter((booking) => booking.runnerId === runner.id);
   const groupedTasks = {
-    Assigned: myTasks.filter((booking) => booking.status === 'Assigned'),
-    'In Progress': myTasks.filter((booking) => booking.status === 'In Progress'),
+    Assigned: myTasks.filter((booking) => booking.status === 'Assigned').sort(bySoonest),
+    'In Progress': myTasks.filter((booking) => booking.status === 'In Progress').sort(bySoonest),
+    // Completed stays newest-first — that's a history, not a to-do list.
     Completed: myTasks.filter((booking) => booking.status === 'Completed')
   };
   const completed = bookings.filter((booking) => booking.runnerId === runner.id && booking.status === 'Completed');
@@ -119,7 +127,11 @@ export default function RunnerDashboard() {
     }, {})
   ).sort((a, b) => b.tasks - a.tasks);
 
+  // Accepting is a one-way commitment — there is no release action — so a mis-tap
+  // on a phone would bind a runner to a job they can't hand back. Confirm first.
   const accept = async (booking) => {
+    const when = `${booking.date} at ${booking.time}`;
+    if (!window.confirm(`Accept this ${booking.serviceType.toLowerCase()} on ${when}?\n\nYou'll be committing to this task and the customer will be told you're on it.`)) return;
     await acceptBooking(booking.id);
     showToast('Task accepted');
   };
@@ -151,13 +163,28 @@ export default function RunnerDashboard() {
           <>
             <div className="w-full text-sm text-muted">
               {booking.address
-                ? <><p><strong>Address:</strong> {booking.address}</p><p><strong>Phone:</strong> {booking.contactPhone}</p></>
+                ? (
+                  <>
+                    {/* Tappable — the runner is on a phone, often walking. */}
+                    <p>
+                      <strong>Address:</strong>{' '}
+                      <a className="font-semibold text-ink underline" href={mapsUrl(booking.address)} target="_blank" rel="noreferrer">{booking.address}</a>
+                    </p>
+                    <p>
+                      <strong>Phone:</strong>{' '}
+                      <a className="font-semibold text-ink underline" href={`tel:${booking.contactPhone}`}>{booking.contactPhone}</a>
+                    </p>
+                  </>
+                )
                 : <p><strong>Area:</strong> {booking.postcodeArea} · full address and contact details are shared once you accept this task</p>}
               <p><strong>Instructions:</strong> {booking.instructions}</p>
             </div>
             {booking.status === 'Assigned' && <Button onClick={() => updateBooking(booking.id, { status: 'In Progress' })}>Start Task</Button>}
             {booking.status === 'In Progress' && <Button variant="secondary" onClick={() => { setCompletingBooking(booking); setGoodsCost(''); }}>Mark Complete</Button>}
-            {booking.status === 'In Progress' && <Button variant="outline" onClick={() => setContact({ booking, customer })}><MessageSquare size={18} /> Contact Customer</Button>}
+            {/* Was gated to In Progress only, while the Messages tab listed Assigned
+                conversations too — so an accepted-but-not-started job had no way to
+                message from here. Both now agree. */}
+            {['Assigned', 'In Progress'].includes(booking.status) && <Button variant="outline" onClick={() => setContact({ booking, customer })}><MessageSquare size={18} /> Contact Customer</Button>}
             {booking.status === 'Completed' && <p className="font-semibold text-secondary">Completed</p>}
           </>
         )}
@@ -178,7 +205,7 @@ export default function RunnerDashboard() {
           <p className="mt-1 text-stone-400">{runner.area} · {runner.status === 'Active' ? 'Active runner' : `${runner.status} runner`}</p>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4"><Card><ClipboardList className="text-primary" /><p className="mt-3 text-sm font-bold text-muted">Available nearby</p><p className="text-3xl font-black">{available.length}</p></Card><Card><CheckCircle2 className="text-secondary" /><p className="mt-3 text-sm font-bold text-muted">Completed</p><p className="text-3xl font-black">{completed.length}</p></Card><Card><WalletCards className="text-primary" /><p className="mt-3 text-sm font-bold text-muted">Earnings</p><p className="text-3xl font-black">£{earnings.toFixed(0)}</p></Card><Card><Star className="text-amber-500" /><p className="mt-3 text-sm font-bold text-muted">Rating</p><p className="text-3xl font-black">{ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : runner.rating}</p></Card></div>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4"><Card><ClipboardList className="text-primary" /><p className="mt-3 text-sm font-bold text-muted">Available nearby</p><p className="text-3xl font-black">{available.length}</p></Card><Card><CheckCircle2 className="text-secondary" /><p className="mt-3 text-sm font-bold text-muted">Completed</p><p className="text-3xl font-black">{completed.length}</p></Card><Card><WalletCards className="text-primary" /><p className="mt-3 text-sm font-bold text-muted">Earnings</p><p className="text-3xl font-black">£{earnings.toFixed(0)}</p></Card><Card><Star className="text-amber-500" /><p className="mt-3 text-sm font-bold text-muted">Rating</p><p className="text-3xl font-black">{ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : '—'}</p></Card></div>
       <div className="flex justify-center">
         <div className="flex gap-2 overflow-x-auto rounded-xl bg-surface-hi p-2">
           {tabs.map((tab) => (
@@ -186,7 +213,20 @@ export default function RunnerDashboard() {
           ))}
         </div>
       </div>
-      {activeTab === 'Available Tasks' && <div className="grid gap-4">{available.length ? available.map((booking, index) => <BookingCard key={booking.id} booking={booking} actions={<><p className="font-bold text-secondary">Runner payout: £{payout(booking.price)}</p><p className="text-sm text-muted">{(0.7 + index * 0.4).toFixed(1)} miles away</p><Button onClick={() => accept(booking)}>Accept Task</Button></>} />) : <Card className="border-dashed text-center"><p className="font-bold text-muted">No open tasks in your area</p><p className="mt-1 text-sm text-muted">Check back later for new local errands.</p></Card>}</div>}
+      {activeTab === 'Available Tasks' && <div className="grid gap-4">{available.length ? [...available].sort(bySoonest).map((booking) => <BookingCard key={booking.id} booking={booking} actions={(
+        <>
+          <p className="font-bold text-secondary">Runner payout: £{money(payout(booking.price))}</p>
+          {/* What the customer actually wants. The server already sends this to
+              browsing runners; it just was not being shown, so people were
+              committing to a shop with no idea what was on the list. */}
+          <div className="w-full rounded-lg bg-surface-hi p-3 text-sm">
+            <p className="font-bold text-ink">What's needed</p>
+            <p className="mt-1 whitespace-pre-line text-muted">{booking.instructions || 'No details given.'}</p>
+          </div>
+          <p className="text-sm text-muted">{booking.postcodeArea} · full address shared once you accept</p>
+          <Button onClick={() => accept(booking)}>Accept Task</Button>
+        </>
+      )} />) : <Card className="border-dashed text-center"><p className="font-bold text-muted">No open tasks in your area</p><p className="mt-1 text-sm text-muted">Check back later for new local errands.</p></Card>}</div>}
       {activeTab === 'My Tasks' && <div className="space-y-6">{Object.entries(groupedTasks).map(([status, items]) => <section key={status}><h2 className="mb-3 text-xl font-bold">{status}</h2><div className="grid gap-4">{items.length ? items.map(renderTask) : <Card><p className="text-muted">No {status.toLowerCase()} tasks.</p></Card>}</div></section>)}</div>}
       {activeTab === 'Earnings' && (
         <div className="space-y-4">
@@ -194,7 +234,7 @@ export default function RunnerDashboard() {
             <Card><p className="text-sm font-bold text-muted">Total earned</p><p className="text-3xl font-black">£{earnings.toFixed(2)}</p></Card>
             <Card><p className="text-sm font-bold text-muted">Completed tasks</p><p className="text-3xl font-black">{completed.length}</p></Card>
             <Card><p className="text-sm font-bold text-muted">Avg per task</p><p className="text-3xl font-black">£{completed.length ? (earnings / completed.length).toFixed(2) : '0.00'}</p></Card>
-            <Card><p className="text-sm font-bold text-muted">Avg rating</p><p className="text-3xl font-black">{ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : runner.rating}</p></Card>
+            <Card><p className="text-sm font-bold text-muted">Avg rating</p><p className="text-3xl font-black">{ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : '—'}</p></Card>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Card>
@@ -327,7 +367,10 @@ export default function RunnerDashboard() {
           <Card>
             <h2 className="text-lg font-bold text-ink">Performance</h2>
             <div className="mt-4 space-y-3 text-sm">
-              {[['Rating', runner.rating], ['Completed tasks', runner.completedTasks], ['Status', runner.status]].map(([label, value]) => (
+              {/* RunnerProfile.rating is never written after signup, so showing it
+                  raw put a permanent "0" here while the header showed the real
+                  average. Use the same computed value in both places. */}
+              {[['Rating', ratings.length ? `${(ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)} from ${ratings.length} review${ratings.length === 1 ? '' : 's'}` : 'No reviews yet'], ['Completed tasks', runner.completedTasks], ['Status', runner.status]].map(([label, value]) => (
                 <div key={label} className="flex justify-between border-b border-surface-hi pb-3 last:border-0">
                   <span className="text-muted">{label}</span>
                   <span className="font-semibold text-ink">{value}</span>

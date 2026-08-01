@@ -1,4 +1,5 @@
 import { prisma } from '../config/prisma.js';
+import { adminDeleteUser } from '../services/adminUsers.service.js';
 import { bookingToClient, runnerToClient } from '../utils/serializers.js';
 
 export const overview = async (req, res, next) => {
@@ -34,6 +35,18 @@ export const overview = async (req, res, next) => {
       bookings: bookings.map(bookingToClient),
       runners: runners.map(runnerToClient)
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteUser = async (req, res, next) => {
+  try {
+    const result = await adminDeleteUser(req.user, req.params.id, {
+      reason: req.body?.reason || '',
+      force: req.body?.force === true
+    });
+    res.json(result);
   } catch (error) {
     next(error);
   }

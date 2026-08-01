@@ -465,3 +465,54 @@ export const notifyNewMessage = (message) => {
 export const notifyReviewSubmitted = () => {
   // Internal event — no external notification needed
 };
+
+export const notifyPasswordReset = (user, resetUrl, ttlMinutes) => {
+  const email = user?.email;
+  const name = esc(user?.name) || 'there';
+  if (!email) return;
+
+  send({
+    to: email,
+    subject: 'Reset your ErrandBuddy password',
+    html: layout(`
+      ${h1('Reset your password')}
+      ${p(`Hi ${name.split(' ')[0]}, we got a request to reset your ErrandBuddy password. Tap the button below to choose a new one.`)}
+      ${btn('Choose a new password', resetUrl)}
+      ${p(`This link works once and expires in ${ttlMinutes} minutes.`)}
+      ${p(`If you didn't ask for this, you can safely ignore this email — your password won't change.`)}
+    `)
+  });
+};
+
+export const notifyPasswordChanged = (user) => {
+  const email = user?.email;
+  const name = esc(user?.name) || 'there';
+  if (!email) return;
+
+  send({
+    to: email,
+    subject: 'Your ErrandBuddy password was changed',
+    html: layout(`
+      ${h1('Your password was changed')}
+      ${p(`Hi ${name.split(' ')[0]}, your ErrandBuddy password has just been changed and you've been signed out on any other devices.`)}
+      ${p(`If this was you, there's nothing to do. <strong>If it wasn't</strong>, reply to this email straight away.`)}
+    `)
+  });
+};
+
+export const notifyAccountRemoved = (user, reason) => {
+  const email = user?.email;
+  const name = esc(user?.name) || 'there';
+  if (!email) return;
+
+  send({
+    to: email,
+    subject: 'Your ErrandBuddy account has been removed',
+    html: layout(`
+      ${h1('Account removed')}
+      ${p(`Hi ${name.split(' ')[0]}, your ErrandBuddy account has been removed and your personal data deleted.`)}
+      ${reason ? p(`<strong>Reason:</strong> ${esc(reason)}`) : ''}
+      ${p(`If you think this was a mistake, please reply to this email.`)}
+    `)
+  });
+};

@@ -24,6 +24,7 @@ export default function Register() {
   const [role, setRole] = useState(initialRole);
   const [form, setForm] = useState(baseForm);
   const [loading, setLoading] = useState(false);
+  const [slow, setSlow] = useState(false);
   const { register } = useApp();
   const navigate = useNavigate();
 
@@ -32,11 +33,16 @@ export default function Register() {
   const submit = async (event) => {
     event.preventDefault();
     setLoading(true);
+    setSlow(false);
+    // See Login — the API sleeps when idle and a silent 50s wait reads as broken.
+    const slowTimer = setTimeout(() => setSlow(true), 4000);
     try {
       const user = await register({ ...form, role });
       navigate(user.role === 'runner' ? '/runner/dashboard' : '/welcome');
     } catch {
     } finally {
+      clearTimeout(slowTimer);
+      setSlow(false);
       setLoading(false);
     }
   };
@@ -70,6 +76,11 @@ export default function Register() {
             </>
           )}
           <Button className="w-full" type="submit" loading={loading}>{role === 'runner' ? 'Submit application' : 'Create account'}</Button>
+          {slow ? (
+            <p className="text-center text-sm text-muted">
+              Just waking things up — this can take up to a minute the first time today. Please don't close the page.
+            </p>
+          ) : null}
         </form>
         <p className="mt-5 text-sm text-muted">Already registered? <Link className="font-semibold text-ink underline" to="/login">Log in</Link>.</p>
       </Card>

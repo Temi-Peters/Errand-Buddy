@@ -53,6 +53,20 @@ export const AppProvider = ({ children }) => {
     setToken(null);
   };
 
+  // The service-unavailable screen replaces the whole app, and nothing else
+  // clears the flag unless a logged-in refresh succeeds — so without this a
+  // logged-out visitor who hits one blip is stranded until they reload by hand.
+  const retryConnection = async () => {
+    try {
+      await api.health();
+      setServiceUnavailable(false);
+      if (authUser) await refreshFromApi(authUser, { silent: true });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const handleApiError = (error) => {
     if (error instanceof ApiUnavailableError) {
       setServiceUnavailable(true);
@@ -300,6 +314,25 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // Admin removal of another user's account. A 409 means the person still has
+  // live bookings — the caller re-issues with force after confirming, so it must
+  // NOT raise an error toast here or the admin sees a failure and a confirm at once.
+  const adminDeleteUser = async (userId, { reason = '', force = false } = {}) => {
+    try {
+      const response = await api.adminDeleteUser(userId, { reason, force });
+      setCustomers((current) => current.filter((customer) => customer.userId !== userId));
+      setRunners((current) => current.filter((runner) => runner.userId !== userId));
+      // Their bookings cascade away server-side, so pull fresh lists rather than
+      // trying to unpick which rows disappeared.
+      refreshFromApi(authUser, { silent: true });
+      showToast(`${response.deleted?.name || 'Account'} deleted`);
+      return response;
+    } catch (error) {
+      if (error.status !== 409) handleApiError(error);
+      throw error;
+    }
+  };
+
   const fetchTemplates = async () => {
     try {
       const response = await api.templates();
@@ -517,6 +550,8 @@ export const AppProvider = ({ children }) => {
     fetchMessages,
     sendMessage,
     updateRunnerStatus,
+    adminDeleteUser,
+    retryConnection,
     rejectRunner,
     updateProfile,
     fetchWallet,
