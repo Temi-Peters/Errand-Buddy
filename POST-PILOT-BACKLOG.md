@@ -27,11 +27,20 @@ those before treating this as exhaustive.
 
 ---
 
+## Shipped for the pilot after this list was first written
+
+- **Wallet disabled** — top-up and withdrawal greyed out in the client *and*
+  refused server-side (`WALLET_ENABLED`, opt-in). Balance stays visible. Cost of
+  goods is settled directly between customer and runner during the pilot.
+- **First-errand introductory price** — £8 for a customer's first one-off,
+  server-derived, with a badge at checkout and in the confirmation email making
+  clear it is a one-time welcome price. Runner is paid on the full £25 tariff;
+  the platform absorbs the £14.50.
+
 ## Could still make it before Sunday (small, low risk)
 
 | Item | Why | Effort |
 |---|---|---|
-| Prefill address from `CustomerProfile` in `Book.jsx` | The profile already stores address + postcodeArea and the booking form ignores them, so every customer retypes their address every time. Real friction for elderly users. | ~1h |
 | "Declining costs you nothing" copy for runners | Church volunteers will feel social pressure to accept everything, then burn out or ghost. Saying it out loud is copy only. | ~30m |
 | Cancellation policy stated at booking | Nobody has a policy at launch and then everyone argues. Stating it is cheap; enforcing it can come later. | ~1h |
 
@@ -111,6 +120,46 @@ feature request. Needs a photo field on `Booking` and an upload route registered
 before `express.json()` (follow the `RunnerDocument` pattern). Resend is already
 wired for the itemised email.
 
+### 6b. Reassignment status — cancelled jobs go back to the pool
+*(Founder's idea, 31 July.)* When a runner cancels or releases a job it currently
+just sits idle. Add a reassignment state so the booking returns to the open pool
+and every other eligible runner is pinged again.
+
+Needs a `REASSIGNING` (or reuse of `PENDING` + a `reassignedAt` stamp) plus a
+notification fan-out. Pairs directly with **#7 Release an accepted job** and with
+the auto-dispatch item in P3 — build them together, since they share the same
+"notify eligible runners" primitive. Note the notification must fire on the
+booking being *available*, not on creation.
+
+### 6c. Runner virtual card (research first, then decide)
+*(Founder's idea, 31 July.)* Instead of the runner fronting their own money and
+being reimbursed, issue them a virtual card tied to a balance that they spend at
+the shop. All the existing refund / reimbursement / top-up rules would still
+apply.
+
+**This is a good instinct and it may be the right long-term answer** — it removes
+the runner's cash-flow burden entirely, which is one of the biggest reasons small
+errand platforms lose runners. Instacart and Shipt both work this way.
+
+Research before committing:
+- **Stripe Issuing** is the obvious route — it is built for exactly this: issue
+  virtual cards, fund them from the platform balance, and constrain spend with
+  authorisation controls (merchant category, per-transaction cap, single-use
+  cards tied to one booking). Check current UK eligibility, pricing, and the
+  application/approval process, which is not automatic.
+- **Regulatory note, important:** this is *not* the same problem as the customer
+  wallet. A customer wallet is money **you owe back to a customer**. A funded
+  card is **your own money being spent on your own obligation**. So it does not
+  obviously reintroduce the e-money issue — but it must be confirmed, and it only
+  works if the customer has already paid, which means it depends on the pre-auth
+  + capture work in P0 #1 landing first.
+- **Fallback if Issuing isn't available:** a per-errand spend cap with the runner
+  fronting and same-day reimbursement, or a small number of shared physical cards
+  held by trusted runners for a pilot-scale operation.
+- Consider single-use cards scoped to one booking with the cap set to the
+  authorised goods estimate — that also solves the "runner typed any number up to
+  £1000" problem in P0 #2.
+
 ### 7. Release an accepted job
 If a runner's car won't start, their only options today are to phone someone or
 let an elderly customer's prescription silently fail. A structured release gives
@@ -126,10 +175,42 @@ customer cancelled.
 UI and has no runner endpoint. There is no "customer not home", "pharmacy
 closed", or "could not complete" outcome — only COMPLETED.
 
-### 10. Runner rating is never computed
+### 8b. Claims become a ticket system
+*(Founder's decision, 31 July.)* Runners currently cannot see or respond to a
+claim raised against them — `listClaims` returns `[]` for every runner, while a
+customer can name them and trigger a Stripe refund with no notice.
+
+Turn `Claim` into a thread: messages attached to the claim, visible to the
+customer, the named runner and the admin, with a status the runner can see. The
+existing per-booking `Message` model is a reasonable template. Notify the runner
+on creation and on resolution. **A refund should not be issuable until the runner
+has had a chance to respond**, or at minimum the admin should see that they
+haven't.
+
+### 10. Runner rating: compute it, and don't fabricate a starting value
 `RunnerProfile.rating` is set to 0 at signup and never written again. The display
-was patched to use a computed average; the stored field is still dead.
-`notifyReviewSubmitted` is also an empty function.
+was patched to use a computed average; the stored field is still dead, and
+`notifyReviewSubmitted` is an empty function.
+
+**On the starting value** *(founder suggested 2 or 2.5 rather than 5, 31 July)* —
+the instinct that 5 is a false blanket is right, but **2.5 is also a fabricated
+number, just a pessimistic one**, and it is worse in one specific way: it makes a
+brand-new runner look actively bad to customers before they have done anything,
+which suppresses their first bookings and means they may never get the reviews
+that would fix it. That is a cold-start penalty on exactly the people you most
+need to keep.
+
+**Recommendation: don't show a number at all until there is real data.** Display
+a "New runner" badge until roughly 3 completed reviews, then switch to the true
+average. This is what most marketplaces settled on. It is honest, it doesn't
+punish new runners, and it doesn't overclaim either.
+
+**On gamification** *(founder's idea)* — tiering task access by performance is a
+real and proven mechanic (Uber Pro, Instacart priority access). Worth doing. But
+base progression on **completed tasks plus genuine rating once it exists**, not
+on a made-up starting score. A runner-onboarding splash explaining how the rating
+works, what unlocks at each tier, and how to get there is a good companion piece
+and cheap to build.
 
 ### 11. Booking photos (original feature request)
 Customers attach photos to specify items visually — "this loaf, not that one."
@@ -152,7 +233,8 @@ discount.
 
 | Item | Note |
 |---|---|
-| Saved address book + persistent delivery notes | Gate codes, "ring twice", "dog in the garden". Currently retyped into free text every booking. |
+| **Autofill from signup details** *(founder, 31 July)* | Address and phone are captured at registration and then ignored by the booking form, so customers retype them every time. Prefill from `CustomerProfile`, keep them editable per booking. Cheapest real win on the customer side. |
+| Saved address book + persistent delivery notes | The step beyond autofill: multiple saved addresses with gate codes, "ring twice", "dog in the garden". Currently retyped into free text every booking. |
 | Customer standing notes / accessibility flags | `CustomerProfile` has no notes, preferences, or accessibility fields. "Hard of hearing", key-safe code, preferred brands. |
 | "Your runner is on the way" state | Long silent gap between ASSIGNED and IN_PROGRESS. Elderly customers ring to ask where their shopping is. |
 | Reschedule instead of cancel | Elderly customers reschedule constantly — appointments, weather. Cancel-and-rebook loses the runner and creates a refund mess once capture is live. |

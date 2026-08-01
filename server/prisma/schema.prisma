@@ -203,7 +203,11 @@ model Booking {
   subscriptionPlan String?
   date             DateTime
   time             String
+  // What the customer was actually charged. discountAmount records how much was
+  // taken off the standard tariff, so the list price is price + discountAmount
+  // and revenue reporting can tell a promotion apart from a cheaper booking.
   price            Decimal          @db.Decimal(10, 2)
+  discountAmount   Decimal?         @db.Decimal(10, 2)
   status           BookingStatus    @default(PENDING)
   instructions     String
   address          String

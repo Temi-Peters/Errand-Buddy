@@ -19,6 +19,10 @@ import { stripePromise } from '../lib/stripe';
 const tabs = ['Overview', 'My Bookings', 'Templates', 'Carers', 'Wallet', 'Messages', 'Account'];
 
 const TOP_UP_AMOUNTS = [10, 20, 50, 100];
+// Off unless explicitly enabled. Holding a customer balance is the regulated
+// part of the platform, so it stays disabled until that is signed off — the
+// server refuses top-up and withdrawal independently of this flag.
+const WALLET_ENABLED = import.meta.env.VITE_WALLET_ENABLED === 'true';
 
 export default function CustomerDashboard() {
   const { authUser, bookings, runners, customers, updateBooking, fetchMessages, sendMessage, updateProfile, showToast, wallet, fetchWallet, setWallet, templates, fetchTemplates, saveTemplate, removeTemplate, carerLinks, fetchCarerLinks, inviteCarer, acceptCarerInvite, removeCarerLink, enablePush, claims, fetchClaims, raiseClaim } = useApp();
@@ -581,7 +585,22 @@ export default function CustomerDashboard() {
             )}
           </div>
 
-          {/* Top-up */}
+          {/* Top-up — disabled for the pilot. The wallet holds customer money,
+              which is the part of the platform that needs professional sign-off
+              before it can take real funds, so top-ups are switched off while
+              cost-of-goods is settled directly between customer and runner. */}
+          {!WALLET_ENABLED && (
+            <Card className="space-y-2 border-dashed">
+              <h2 className="text-lg font-bold text-ink">Top up wallet</h2>
+              <p className="text-sm text-muted">
+                Wallet top-ups are switched off for now. During the pilot you settle the cost of
+                your shopping with your runner directly — everything else works as normal.
+              </p>
+              <p className="text-sm font-semibold text-muted">We'll turn this back on shortly.</p>
+            </Card>
+          )}
+
+          {WALLET_ENABLED && (
           <Card className="space-y-4">
             <h2 className="text-lg font-bold text-ink">Top up wallet</h2>
             <p className="text-sm text-muted">Add funds to cover the cost of goods your runner purchases on your behalf.</p>
@@ -633,9 +652,10 @@ export default function CustomerDashboard() {
               </div>
             )}
           </Card>
+          )}
 
           {/* Withdraw */}
-          {wallet.balance > 0 && (
+          {WALLET_ENABLED && wallet.balance > 0 && (
             <Card className="flex items-center justify-between gap-4">
               <div>
                 <p className="font-bold text-ink">Withdraw funds</p>

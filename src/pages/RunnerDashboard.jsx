@@ -15,7 +15,15 @@ import { useApp } from '../context/AppContext';
 import { areas } from '../data/options';
 
 const tabs = ['Available Tasks', 'My Tasks', 'Earnings', 'Messages', 'Profile'];
-const payout = (price) => Math.round(price * 0.9 * 100) / 100;
+// Prefer the figure the server actually recorded. Recomputing from the booking
+// price is wrong on a discounted booking — the runner is paid on the full tariff
+// while the customer paid an introductory price, so price * 0.9 would understate
+// what they are owed. The multiplier is only a fallback for older bookings.
+const payout = (booking) => (
+  booking?.payment?.runnerPayoutAmount != null
+    ? Number(booking.payment.runnerPayoutAmount)
+    : Math.round(Number(booking?.price || 0) * 0.9 * 100) / 100
+);
 // Always two decimals — a £15 job was showing "£13.5", which reads as a bug.
 const money = (value) => Number(value || 0).toFixed(2);
 // Works on both iOS and Android without needing to detect the platform.
@@ -106,7 +114,7 @@ export default function RunnerDashboard() {
     Completed: myTasks.filter((booking) => booking.status === 'Completed')
   };
   const completed = bookings.filter((booking) => booking.runnerId === runner.id && booking.status === 'Completed');
-  const earnings = completed.reduce((sum, booking) => sum + payout(booking.price), 0);
+  const earnings = completed.reduce((sum, booking) => sum + payout(booking), 0);
   const ratings = completed.map((booking) => booking.rating?.stars).filter(Boolean);
 
   // Chart data
@@ -114,7 +122,7 @@ export default function RunnerDashboard() {
     completed.reduce((acc, booking) => {
       const month = new Date(booking.date).toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
       acc[month] = acc[month] || { month, earnings: 0 };
-      acc[month].earnings += payout(booking.price);
+      acc[month].earnings += payout(booking);
       return acc;
     }, {})
   );
@@ -215,7 +223,7 @@ export default function RunnerDashboard() {
       </div>
       {activeTab === 'Available Tasks' && <div className="grid gap-4">{available.length ? [...available].sort(bySoonest).map((booking) => <BookingCard key={booking.id} booking={booking} actions={(
         <>
-          <p className="font-bold text-secondary">Runner payout: £{money(payout(booking.price))}</p>
+          <p className="font-bold text-secondary">Runner payout: £{money(payout(booking))}</p>
           {/* What the customer actually wants. The server already sends this to
               browsing runners; it just was not being shown, so people were
               committing to a shop with no idea what was on the list. */}

@@ -200,10 +200,28 @@ export default function Book() {
         <Card className="space-y-5">
           <div>
             <h2 className="text-xl font-bold">Payment</h2>
+            {/* Once the booking exists the server has told us the real price —
+                prefer it over the local estimate, which knows nothing about
+                introductory offers. */}
             <div className="mt-3 rounded-xl bg-surface-hi p-4">
               <p className="font-bold">{form.serviceType}</p>
               <p className="text-sm text-muted">{form.date} at {form.time}</p>
-              <p className="mt-1 text-2xl font-black">£{form.price}</p>
+              <div className="mt-1 flex flex-wrap items-baseline gap-2">
+                <p className="text-2xl font-black">£{Number(confirmed?.price ?? form.price).toFixed(2)}</p>
+                {confirmed?.discountAmount > 0 && (
+                  <p className="text-lg font-semibold text-muted line-through">£{Number(confirmed.listPrice).toFixed(2)}</p>
+                )}
+              </div>
+              {confirmed?.discountAmount > 0 && (
+                <div className="mt-3 rounded-lg border border-emerald-300 bg-emerald-50 p-3 dark:border-emerald-800 dark:bg-emerald-900/20">
+                  <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
+                    🎉 First errand offer — £{Number(confirmed.discountAmount).toFixed(2)} off
+                  </p>
+                  <p className="mt-1 text-xs text-emerald-800/80 dark:text-emerald-300/80">
+                    A one-time welcome price for your first errand. Later errands are £{Number(confirmed.listPrice).toFixed(2)}.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
           {onBehalfOf ? (
@@ -237,13 +255,13 @@ export default function Book() {
                 }
               }}
             >
-              <CheckoutForm price={form.price} onSuccess={handlePaymentSuccess} />
+              <CheckoutForm price={Number(confirmed?.price ?? form.price)} onSuccess={handlePaymentSuccess} />
             </Elements>
           )}
         </Card>
       )}
 
-      {step === 6 && confirmed && <Card><h2 className="text-2xl font-black">Booking request created</h2><div className="mt-4 space-y-2 text-muted"><p><strong>Service:</strong> {confirmed.serviceType}</p><p><strong>Date:</strong> {confirmed.date} at {confirmed.time}</p><p><strong>Estimated total:</strong> £{confirmed.price}</p><StatusBadge status={confirmed.status || 'Pending'} /></div><Button className="mt-6" onClick={() => navigate('/customer/dashboard')}>Go to dashboard</Button></Card>}
+      {step === 6 && confirmed && <Card><h2 className="text-2xl font-black">Booking request created</h2><div className="mt-4 space-y-2 text-muted"><p><strong>Service:</strong> {confirmed.serviceType}</p><p><strong>Date:</strong> {confirmed.date} at {confirmed.time}</p><p><strong>Estimated total:</strong> £{Number(confirmed.price).toFixed(2)}</p>{confirmed.discountAmount > 0 && <p className="font-semibold text-emerald-700 dark:text-emerald-400">First errand offer applied — £{Number(confirmed.discountAmount).toFixed(2)} off. This is a one-time welcome price; later errands are £{Number(confirmed.listPrice).toFixed(2)}.</p>}<StatusBadge status={confirmed.status || 'Pending'} /></div><Button className="mt-6" onClick={() => navigate('/customer/dashboard')}>Go to dashboard</Button></Card>}
 
       {step < 6 && (
         <div className="mt-6 flex justify-between gap-3">

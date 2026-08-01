@@ -10,7 +10,7 @@ import {
   serviceTypeToClient
 } from '../utils/serializers.js';
 import { chargeForGoods } from './wallet.service.js';
-import { resolveBookingPrice } from '../config/pricing.js';
+import { resolvePricing } from '../config/pricing.js';
 import {
   notifyBookingAssigned,
   notifyBookingCreated,
@@ -105,10 +105,6 @@ export const createBooking = async (user, data) => {
   // Price is derived server-side from the booking tier — a client-supplied amount is
   // never trusted, so a customer cannot pay an arbitrary price for a booking.
   const bookingType = bookingTypeFromClient(data.bookingType);
-  const price = resolveBookingPrice(bookingType, data.subscriptionPlan || data.subscription || data.bookingType);
-  if (price == null) {
-    throw new ApiError(400, 'Could not determine the price for this booking. Please reselect your plan.');
-  }
 
   // Carer-assisted booking: when onBehalfOf is set, the authenticated user is the
   // carer placing a booking under the client's profile. The carer pays the service
@@ -136,7 +132,28 @@ export const createBooking = async (user, data) => {
       : `Your wallet balance is negative (−£${Math.abs(Number(payer.walletBalance)).toFixed(2)}). Please top up your wallet before booking.`);
   }
 
-  const fee = platformFee(price);
+  // Introductory offer, decided entirely server-side. Eligibility is "this
+  // customer has never had a booking that wasn't cancelled" — counted on the
+  // customer receiving the service, not the carer paying, so a carer can't farm
+  // the offer across the people they help.
+  const priorBookings = await prisma.booking.count({
+    where: { customerId, status: { not: 'CANCELLED' } }
+  });
+  const pricing = resolvePricing(bookingType, data.subscriptionPlan || data.subscription || data.bookingType, {
+    isFirstBooking: priorBookings === 0
+  });
+  if (pricing == null) {
+    throw new ApiError(400, 'Could not determine the price for this booking. Please reselect your plan.');
+  }
+
+  const { listPrice, discount, chargeAmount: price } = pricing;
+
+  // The runner is paid on the LIST price even when the customer paid less — the
+  // promotion is the platform's acquisition cost, not a pay cut for the runner.
+  // On a discounted booking that makes platformFeeAmount negative, which is the
+  // honest record: the platform is subsidising this errand.
+  const runnerPayout = Math.round((listPrice - platformFee(listPrice)) * 100) / 100;
+  const fee = Math.round((price - runnerPayout) * 100) / 100;
 
   // Create the Stripe PaymentIntent first so we have a real intent ID to store
   const intent = await createPaymentIntent({
@@ -155,6 +172,7 @@ export const createBooking = async (user, data) => {
       date: new Date(`${data.date}T00:00:00.000Z`),
       time: data.time,
       price,
+      discountAmount: discount > 0 ? discount : null,
       status: 'PENDING_PAYMENT',
       instructions: data.instructions,
       address: data.address,
@@ -167,7 +185,7 @@ export const createBooking = async (user, data) => {
           status: 'REQUIRES_CONFIRMATION',
           stripePaymentIntentId: intent.id,
           platformFeeAmount: fee,
-          runnerPayoutAmount: price - fee
+          runnerPayoutAmount: runnerPayout
         }
       }
     },

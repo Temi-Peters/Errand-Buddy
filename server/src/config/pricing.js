@@ -29,3 +29,29 @@ export const resolveBookingPrice = (bookingType, subscriptionRaw) => {
   }
   return ONE_OFF_PRICE;
 };
+
+// Introductory price for a customer's first one-off errand. Subscriptions are
+// excluded — a weekly plan is already a commitment and already discounted, and
+// the point of this offer is to remove the risk of trying the service once.
+export const FIRST_BOOKING_PRICE = 8;
+
+// Whether a customer has ever had a booking before is decided by the caller; this
+// stays a pure function so the pricing rules live in one readable place.
+//
+// IMPORTANT: the runner is paid on the LIST price, never the discounted one. A
+// promotion is the platform's cost of acquiring a customer, and taking it out of
+// the runner's payout would mean a volunteer quietly earning less because we ran
+// an offer. See platformFee/runnerPayout in bookings.service.js.
+export const resolvePricing = (bookingType, subscriptionRaw, { isFirstBooking = false } = {}) => {
+  const listPrice = resolveBookingPrice(bookingType, subscriptionRaw);
+  if (listPrice == null) return null;
+
+  const eligible = isFirstBooking && bookingType !== 'WEEKLY_SUBSCRIPTION';
+  const discount = eligible ? Math.max(0, listPrice - FIRST_BOOKING_PRICE) : 0;
+
+  return {
+    listPrice,
+    discount,
+    chargeAmount: Math.round((listPrice - discount) * 100) / 100
+  };
+};

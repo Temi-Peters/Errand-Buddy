@@ -84,7 +84,10 @@ export const notifyBookingCreated = (booking) => {
         ${detail('Service', serviceTypeToClient(booking.serviceType))}
         ${detail('Date', date)}
         ${detail('Time', booking.time)}
-        ${detail('Price', `£${booking.price}`)}
+        ${detail('Price', `£${Number(booking.price).toFixed(2)}`)}
+        ${Number(booking.discountAmount || 0) > 0
+          ? detail('First errand offer', `−£${Number(booking.discountAmount).toFixed(2)} (one-time; later errands are £${(Number(booking.price) + Number(booking.discountAmount)).toFixed(2)})`)
+          : ''}
         ${detail('Status', 'Pending assignment')}
       `)}
       ${btn('View booking', `${SITE}/customer/dashboard`)}

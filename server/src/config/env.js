@@ -13,6 +13,9 @@ export const env = {
   jwtSecret: process.env.JWT_SECRET || 'dev-only-change-me',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   platformFeePercent: Number(process.env.PLATFORM_FEE_PERCENT || 10),
+  // Opt-in, not opt-out: the wallet holds customer money, so it stays off unless
+  // someone deliberately turns it on. Set WALLET_ENABLED=true to re-enable.
+  walletEnabled: process.env.WALLET_ENABLED === 'true',
   stripeSecretKey: process.env.STRIPE_SECRET_KEY || '',
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
   resendApiKey: process.env.RESEND_API_KEY || '',

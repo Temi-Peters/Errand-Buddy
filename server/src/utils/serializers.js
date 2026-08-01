@@ -98,6 +98,10 @@ export const bookingToClient = (booking, { redactCustomerContact = false } = {})
   date: booking.date.toISOString().slice(0, 10),
   time: booking.time,
   price: Number(booking.price),
+  // What was taken off the standard tariff, and what that tariff was — so the
+  // client can show "£8, normally £25" without recomputing the pricing rules.
+  discountAmount: booking.discountAmount != null ? Number(booking.discountAmount) : null,
+  listPrice: Number(booking.price) + (booking.discountAmount != null ? Number(booking.discountAmount) : 0),
   status: bookingStatusToClient(booking.status),
   rating: booking.review ? { stars: booking.review.stars, review: booking.review.review } : null,
   instructions: booking.instructions,
