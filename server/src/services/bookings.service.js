@@ -13,7 +13,9 @@ import { chargeForGoods } from './wallet.service.js';
 import { resolvePricing } from '../config/pricing.js';
 import {
   notifyBookingAssigned,
+  notifyBookingCancelled,
   notifyBookingCreated,
+  notifyCompletionProblem,
   notifyGoodsCharged,
   notifyReviewSubmitted,
   notifyTaskCompleted,
@@ -32,6 +34,16 @@ const bookingInclude = {
 const platformFee = (price) => Math.round(Number(price) * 0.1 * 100) / 100;
 
 const formatStatus = (status) => status.toLowerCase().replace(/_/g, ' ');
+
+// Which statuses each role may set through the generic PATCH endpoint. Runners
+// get nothing here on purpose — they progress work through accept/start/complete,
+// which carry their own ownership and state guards. null means "any transition
+// the state machine allows", i.e. admin.
+const ROLE_STATUS_CHANGES = {
+  CUSTOMER: new Set(['CANCELLED']),
+  RUNNER: new Set(),
+  ADMIN: null
+};
 
 const assertTransition = (from, to) => {
   const valid = {
@@ -249,6 +261,19 @@ export const updateBooking = async (user, id, data) => {
   if (data.status !== undefined) {
     const status = bookingStatusFromClient(data.status);
     if (!status) throw new ApiError(400, 'Invalid booking status');
+
+    // The state machine says which transitions are legal; this says who may make
+    // them. Without it an assigned runner could cancel a booking the customer had
+    // already paid for (no refund is issued on this path), and a customer could
+    // mark their own booking COMPLETED — skipping the runner's completion flow
+    // entirely — or ASSIGNED, leaving a booking assigned to nobody.
+    const allowed = ROLE_STATUS_CHANGES[user.role];
+    if (allowed && !allowed.has(status)) {
+      throw new ApiError(403, user.role === 'RUNNER'
+        ? 'Use the task actions on your dashboard to update a job.'
+        : 'You cannot set a booking to that status.');
+    }
+
     assertTransition(existing.status, status);
     updates.status = status;
   }
@@ -261,6 +286,12 @@ export const updateBooking = async (user, id, data) => {
 
   if (existing.status !== booking.status && booking.status === 'ASSIGNED') {
     notifyBookingAssigned(booking);
+  }
+
+  // A runner who isn't told will travel to an address for a job that no longer
+  // exists. Only worth sending if someone was actually assigned.
+  if (existing.status !== booking.status && booking.status === 'CANCELLED' && existing.runnerId) {
+    notifyBookingCancelled(booking, { cancelledByRole: user.role });
   }
 
   return bookingToClient(booking);
@@ -299,6 +330,11 @@ export const completeBooking = async (user, id, goodsCostInput = 0) => {
 
   const updated = await transitionRunnerBooking(user, id, 'IN_PROGRESS', 'COMPLETED');
 
+  // Anything that fails after this point does NOT roll the completion back — the
+  // work is done — but every failure is collected and reported rather than logged
+  // and forgotten. See the catch blocks below.
+  const problems = [];
+
   await prisma.runnerProfile.update({
     where: { id: user.runnerProfile.id },
     data: { completedTasks: { increment: 1 } }
@@ -319,8 +355,12 @@ export const completeBooking = async (user, id, goodsCostInput = 0) => {
         });
       }
     } catch (err) {
-      // Log but don't fail completion — the runner has already done the work
+      // Don't fail the completion — the runner has already done the work — but
+      // this must not disappear into the logs. Silently swallowing it meant a
+      // runner could front £60 of shopping, be told "complete", and never learn
+      // that nobody had been charged and they were never going to be repaid.
       console.error(`[goods] Failed to charge goods for booking ${id}:`, err.message);
+      problems.push({ stage: 'goods-charge', message: err.message });
     }
   }
 
@@ -358,8 +398,23 @@ export const completeBooking = async (user, id, goodsCostInput = 0) => {
       }
     }
   } catch (err) {
-    // Log but don't fail the completion — transfers can be retried manually
+    // Transfers are retryable (POST /payments/runner/transfer is idempotent), so
+    // completion still stands — but the runner and an admin need to know it
+    // didn't happen rather than assuming they've been paid.
     console.error(`[payout] Failed to transfer for booking ${id}:`, err.message);
+    problems.push({ stage: 'runner-payout', message: err.message });
+  }
+
+  // Tell someone. The runner gets an honest status back in the response, and the
+  // team gets an email so it can actually be chased.
+  if (problems.length) {
+    notifyCompletionProblem({
+      bookingId: id,
+      runnerName: user.name,
+      runnerEmail: user.email,
+      goodsCost,
+      problems
+    });
   }
 
   if (goodsCost > 0) {
@@ -379,10 +434,12 @@ export const completeBooking = async (user, id, goodsCostInput = 0) => {
       });
     }
 
-    return bookingToClient(fresh);
+    // completionProblems rides along on the DTO so the runner's dashboard can say
+    // "done, but the payment side didn't go through" instead of a clean success.
+    return { ...bookingToClient(fresh), completionProblems: problems };
   }
 
-  return updated;
+  return { ...updated, completionProblems: problems };
 };
 
 const transitionRunnerBooking = async (user, id, requiredStatus, nextStatus) => {

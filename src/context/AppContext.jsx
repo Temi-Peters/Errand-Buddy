@@ -263,6 +263,11 @@ export const AppProvider = ({ children }) => {
       const response = await api.completeBooking(bookingId, goodsCost);
       replaceBooking(response.booking);
       setRunners((current) => current.map((runner) => runner.id === runnerId ? { ...runner, completedTasks: runner.completedTasks + 1 } : runner));
+      // The task is genuinely complete, but if the money side failed the runner
+      // needs to hear it now rather than discover it when no payment arrives.
+      if (response.booking?.completionProblems?.length) {
+        showToast('Task completed, but the payment didn\'t go through. We\'ve been notified and will sort it.', 'error');
+      }
       return response.booking;
     } catch (error) {
       handleApiError(error);

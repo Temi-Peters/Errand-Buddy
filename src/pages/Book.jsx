@@ -42,6 +42,25 @@ export default function Book() {
   const onBehalfOf = searchParams.get('onBehalfOf') || null;
   const [client, setClient] = useState(null);
 
+  // Address and phone were captured at signup and then ignored here, so people
+  // retyped them on every booking — real friction for older users. Prefill from
+  // the profile, but leave the fields editable: an errand often goes somewhere
+  // other than home. Only fills blanks, so a template or a part-filled form wins.
+  useEffect(() => {
+    if (onBehalfOf) return; // a carer's own address is not where the errand goes
+    const profile = customers.find((item) => item.id === authUser?.id);
+    if (!profile) return;
+
+    setForm((current) => ({
+      ...current,
+      address: current.address || profile.address || '',
+      contactPhone: current.contactPhone || profile.phone || '',
+      postcodeArea: current.postcodeArea === blankForm.postcodeArea
+        ? (profile.postcodeArea || current.postcodeArea)
+        : current.postcodeArea
+    }));
+  }, [authUser, customers, onBehalfOf]);
+
   // When booking on behalf of a client, resolve the client from the carer's active links.
   // If no active link is found, the carer isn't authorised — bounce them back.
   useEffect(() => {

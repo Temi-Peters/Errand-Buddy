@@ -15,34 +15,22 @@ those before treating this as exhaustive.
 
 ---
 
-## Already shipped (for context — do not redo)
+> **The 2 August dry run did not go ahead.** The "don't touch the flow" constraint
+> that shaped this list no longer applies, so items are now ordered purely by
+> value and dependency rather than by pilot risk. Re-read the ordering notes at
+> the bottom before picking work up.
+
+## Already shipped and deployed (do not redo)
 
 - Customer PII leak to unassigned runners; dead chat notifications; global rate
-  limit bucket — commit `95edbe9`, deployed
-- Password reset (both roles) + admin account deletion — commit `2b59692`, **not yet deployed**
+  limit bucket — `95edbe9`
+- Password reset (both roles) + admin account deletion — `2b59692`
 - Runner/entry-flow QoL pass: fabricated distance removed, shopping list shown
   before accepting, accept confirmation, maps + tel links, task sort, money
   formatting, messaging gate, rating contradiction, service-unavailable retry,
-  cold-start messaging — commit `47915d5`, **not yet deployed**
-
----
-
-## Shipped for the pilot after this list was first written
-
-- **Wallet disabled** — top-up and withdrawal greyed out in the client *and*
-  refused server-side (`WALLET_ENABLED`, opt-in). Balance stays visible. Cost of
-  goods is settled directly between customer and runner during the pilot.
-- **First-errand introductory price** — £8 for a customer's first one-off,
-  server-derived, with a badge at checkout and in the confirmation email making
-  clear it is a one-time welcome price. Runner is paid on the full £25 tariff;
-  the platform absorbs the £14.50.
-
-## Could still make it before Sunday (small, low risk)
-
-| Item | Why | Effort |
-|---|---|---|
-| "Declining costs you nothing" copy for runners | Church volunteers will feel social pressure to accept everything, then burn out or ghost. Saying it out loud is copy only. | ~30m |
-| Cancellation policy stated at booking | Nobody has a policy at launch and then everyone argues. Stating it is cheap; enforcing it can come later. | ~1h |
+  cold-start messaging — `47915d5`
+- Wallet disabled (client + server, `WALLET_ENABLED` opt-in); first-errand
+  introductory price of £8 with the runner paid on the full tariff — `e1f03a9`
 
 ---
 
@@ -218,14 +206,15 @@ Directly reduces the wrong-item problem. Follow the existing large-upload
 pattern; decide between a `Bytes` blob and the downscaled data-URL approach used
 for avatars.
 
-### 12. First-booking incentive (original feature request)
-**Ship as "we waive our fee on your first errand", not as money off.** The
-current code computes `runnerPayoutAmount: price - fee`, so lowering the price
-takes the discount straight out of the runner's pocket — on a £25 job discounted
-to £20, £4.50 of the £5 comes from the runner. Waiving the platform fee costs the
-platform ~£1.62 after card fees, keeps the runner whole, and can never go
-negative. Enforce server-side in `pricing.js`; the client must never send a
-discount.
+### 12. ~~First-booking incentive~~ — SHIPPED (`e1f03a9`)
+Built as a £8 introductory price for a customer's first one-off, derived
+server-side, with the runner paid on the full £25 tariff so the platform absorbs
+the £14.50 rather than the runner. **Open question now the pilot has moved:** at
+£8 the platform loses £14.50 per booking, which was acceptable for one afternoon
+with a handful of church members but is not a sustainable acquisition cost. Revisit
+`FIRST_BOOKING_PRICE` in `config/pricing.js` before any wider launch — the
+fee-waiver version (customer pays £22.50, platform takes £0, runner still whole)
+caps the loss at the platform's own margin.
 
 ---
 
@@ -291,6 +280,31 @@ If revisited: a per-booking click-to-WhatsApp deep link gated to
 ASSIGNED/IN_PROGRESS, plus a server-side audit record that contact details were
 disclosed (who, when, which booking) so there is a trail even when the
 conversation is off-platform. Number masking before public launch.
+
+---
+
+## Where to start now the pilot has moved
+
+Three tracks. A and B are independent; C is gated on Stripe.
+
+**Track A — correctness (do first, ~1 day).** P0 #3 (runner can cancel a paid
+booking), P0 #2 (silent completion failures), #8 (runner never told of a
+cancellation), #10 (rating never computed). Small, self-contained, all real
+defects. Nothing downstream depends on them, so they never get cheaper to fix.
+
+**Track B — the substitution problem (next, ~3–5 days).** P1 #5, built in the
+five documented steps. This is the single thing most likely to make a real pilot
+fail, and it is now the biggest product gap. Pull #6 (receipt photo) and #11
+(booking photos) in alongside it — they share the same upload plumbing and the
+same "what did the runner actually buy" question.
+
+**Track C — real money (gated on Stripe activation, ~1–2 weeks).** P0 #1 and #4
+together; they are one piece of work, not two. Do not start the virtual card
+(#6c) until this lands, since it depends on the customer having paid first.
+
+Everything in P2 is genuinely optional until one of the above is done. The
+temptation will be to graze on P2 because the items are small — resist it; the
+list is long enough that grazing eats a week without closing anything.
 
 ---
 

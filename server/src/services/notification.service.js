@@ -469,6 +469,63 @@ export const notifyReviewSubmitted = () => {
   // Internal event — no external notification needed
 };
 
+// Completion succeeded but the money side didn't. Goes to the team, because this
+// needs a human to chase — the runner may be out of pocket.
+export const notifyCompletionProblem = ({ bookingId, runnerName, runnerEmail, goodsCost, problems }) => {
+  const rows = problems.map((problem) => detail(esc(problem.stage), esc(problem.message))).join('');
+
+  send({
+    to: env.contactEmail,
+    subject: `⚠️ Payment problem on completed booking ${bookingId}`,
+    html: layout(`
+      ${h1('A completed task had a payment failure')}
+      ${p(`The errand was marked complete, but part of the money flow failed. The runner may be out of pocket — this needs chasing.`)}
+      ${detailTable(`
+        ${detail('Booking', esc(bookingId))}
+        ${detail('Runner', `${esc(runnerName)} (${esc(runnerEmail)})`)}
+        ${detail('Goods cost', `£${Number(goodsCost || 0).toFixed(2)}`)}
+        ${rows}
+      `)}
+      ${p(`Runner payouts can be retried from the admin tools; a failed goods charge needs the customer's payment method checking.`)}
+    `)
+  });
+};
+
+// Sent to the assigned runner when a job is called off. Without this they can
+// travel to an address for a booking that no longer exists.
+export const notifyBookingCancelled = (booking, { cancelledByRole } = {}) => {
+  const email = booking.runner?.user?.email;
+  const name = esc(booking.runner?.user?.name) || 'there';
+  if (!email) return;
+
+  const date = new Date(booking.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const who = cancelledByRole === 'ADMIN' ? 'the ErrandBuddy team' : 'the customer';
+
+  send({
+    to: email,
+    subject: `Cancelled — ${serviceTypeToClient(booking.serviceType)} on ${date}`,
+    html: layout(`
+      ${h1('A task has been cancelled')}
+      ${p(`Hi ${name.split(' ')[0]}, the errand below has been cancelled by ${who}. <strong>Please don't travel for it.</strong>`)}
+      ${detailTable(`
+        ${detail('Service', serviceTypeToClient(booking.serviceType))}
+        ${detail('Date', date)}
+        ${detail('Time', booking.time)}
+        ${detail('Area', esc(booking.postcodeArea))}
+      `)}
+      ${p(`If you'd already started or were on your way, reply to this email and we'll sort it out.`)}
+      ${btn('View your dashboard', `${SITE}/runner/dashboard`)}
+    `)
+  });
+
+  sendPushToUser(booking.runner?.userId, {
+    title: 'Task cancelled',
+    body: `Your ${serviceTypeToClient(booking.serviceType)} on ${date} has been cancelled. Please don't travel for it.`,
+    url: RUNNER_URL,
+    tag: `booking-${booking.id}`
+  });
+};
+
 export const notifyPasswordReset = (user, resetUrl, ttlMinutes) => {
   const email = user?.email;
   const name = esc(user?.name) || 'there';
