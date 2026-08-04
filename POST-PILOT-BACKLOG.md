@@ -9,9 +9,16 @@ Instacart, Shipt, Deliveroo, Tesco, Ocado, Uber Eats, Just Eat, Stuart), a
 code audit of the runner surface, an FCA/e-money research pass, and a security
 review.
 
-**Caveat:** the customer-side audit and the accessibility sweep did not complete.
-There is very likely more on the customer side that is not captured here. Re-run
-those before treating this as exhaustive.
+**Audit coverage.** The runner surface was audited in full. The customer surface
+and accessibility were audited manually afterwards (2 Aug) — findings folded in
+below. What has still **never** been systematically reviewed: the carer flow, the
+templates flow, the claims flow end to end, the admin surface beyond runner
+management, and the PWA/service-worker behaviour.
+
+**Checked and genuinely fine** (recorded so nobody re-litigates them): text
+contrast passes WCAG AA in both themes (4.59–4.83:1 for muted text); tap targets
+use a 44px minimum; empty states exist across the customer dashboard; the
+resume-payment path is wired into the UI.
 
 ---
 
@@ -157,6 +164,37 @@ list, which currently re-shows the same unwanted job every 45s forever.
 ### 8. Runner is never told a booking was cancelled
 No cancellation notifier exists. A runner can travel to an address for a job the
 customer cancelled.
+
+### 8c. Abandoned Pending-payment bookings are never cleaned up
+*(Found in the customer-side audit, 2 Aug.)* Nothing expires a booking that was
+created but never paid for. Two consequences:
+
+1. They pile up in the customer's "Awaiting payment" group indefinitely, which
+   for a confused older user looks like several duplicate bookings.
+2. **They permanently burn the first-errand offer.** Eligibility counts any
+   booking that isn't `CANCELLED`, deliberately, so the offer can't be farmed by
+   creating and abandoning bookings — but the cost is that one abandoned attempt
+   silently removes the discount for good. See `createBooking` in
+   `bookings.service.js`.
+
+Fix: expire `PENDING_PAYMENT` bookings to `CANCELLED` after ~24h. That fixes both
+at once — the clutter goes, and cancelled bookings don't count against
+eligibility. Needs a scheduled job, so it lands with the "keep Render awake"
+item in P3.
+
+### 8d. Session expires mid-flow with no warning
+*(Found 2 Aug.)* JWTs last 7 days with no refresh. When one expires the next
+request 401s and `clearSession()` fires, dumping the user to login — losing an
+in-progress booking form. No warning, no refresh, no "you've been signed out"
+message. Low frequency, high annoyance, and worse for someone who books once a
+fortnight.
+
+### 8e. Small type for the audience
+*(Found 2 Aug.)* 52 uses of `text-xs` (12px) and 238 of `text-sm` (14px) across
+pages and components. Contrast is fine; the sizes are not, for a user base that
+skews elderly. GOV.UK guidance for older users points at 16px+ body text. Worth a
+deliberate pass over which of those are genuinely captions and which are
+information someone has to read.
 
 ### 9. Partial completion / problem states
 `ON_HOLD` exists in the schema and the transition map but is unreachable from the

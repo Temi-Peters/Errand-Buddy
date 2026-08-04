@@ -9,6 +9,7 @@ import {
   retrieveAccount
 } from '../services/stripe.service.js';
 import { creditWallet } from '../services/wallet.service.js';
+import { notifyPaymentFailed } from '../services/notification.service.js';
 
 // ─── POST /api/payments/webhook ───────────────────────────────────────────────
 // Raw body is required — registered before express.json() in app.js
@@ -104,6 +105,18 @@ const handlePaymentFailed = async (paymentIntent) => {
     where: { id: payment.id },
     data: { status: 'FAILED' }
   });
+
+  // Marking the row FAILED told nobody. The booking sits on Pending payment, the
+  // customer believes they've booked, and the errand silently never happens.
+  const booking = await prisma.booking.findUnique({
+    where: { id: payment.bookingId },
+    include: {
+      customer: { include: { user: true } },
+      createdByCarer: { include: { user: true } }
+    }
+  });
+
+  if (booking) notifyPaymentFailed(booking);
 
   console.log(`[webhook] Payment failed for intent ${paymentIntent.id}`);
 };

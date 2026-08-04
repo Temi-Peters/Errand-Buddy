@@ -491,37 +491,109 @@ export const notifyCompletionProblem = ({ bookingId, runnerName, runnerEmail, go
   });
 };
 
-// Sent to the assigned runner when a job is called off. Without this they can
-// travel to an address for a booking that no longer exists.
+// Sent when a job is called off. The assigned runner must be told or they'll
+// travel to an address for a booking that no longer exists — and the customer
+// must be told too when they weren't the one who cancelled it, otherwise an
+// admin cancellation is completely invisible to the person who paid.
 export const notifyBookingCancelled = (booking, { cancelledByRole } = {}) => {
-  const email = booking.runner?.user?.email;
-  const name = esc(booking.runner?.user?.name) || 'there';
+  const date = new Date(booking.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const service = serviceTypeToClient(booking.serviceType);
+  const who = cancelledByRole === 'ADMIN' ? 'the ErrandBuddy team' : 'the customer';
+
+  const runnerEmail = booking.runner?.user?.email;
+  if (runnerEmail) {
+    const runnerName = esc(booking.runner?.user?.name) || 'there';
+    send({
+      to: runnerEmail,
+      subject: `Cancelled — ${service} on ${date}`,
+      html: layout(`
+        ${h1('A task has been cancelled')}
+        ${p(`Hi ${runnerName.split(' ')[0]}, the errand below has been cancelled by ${who}. <strong>Please don't travel for it.</strong>`)}
+        ${detailTable(`
+          ${detail('Service', service)}
+          ${detail('Date', date)}
+          ${detail('Time', booking.time)}
+          ${detail('Area', esc(booking.postcodeArea))}
+        `)}
+        ${p(`If you'd already started or were on your way, reply to this email and we'll sort it out.`)}
+        ${btn('View your dashboard', `${SITE}/runner/dashboard`)}
+      `)
+    });
+
+    sendPushToUser(booking.runner?.userId, {
+      title: 'Task cancelled',
+      body: `Your ${service} on ${date} has been cancelled. Please don't travel for it.`,
+      url: RUNNER_URL,
+      tag: `booking-${booking.id}`
+    });
+  }
+
+  // Only when someone else cancelled it — telling people about their own action
+  // is noise, and the customer has already seen the confirmation in the app.
+  if (cancelledByRole && cancelledByRole !== 'CUSTOMER') {
+    const payer = booking.createdByCarer || booking.customer;
+    const customerEmail = payer?.user?.email;
+    if (!customerEmail) return;
+    const customerName = esc(payer?.user?.name) || 'there';
+
+    send({
+      to: customerEmail,
+      subject: `Your ${service} on ${date} has been cancelled`,
+      html: layout(`
+        ${h1('Your errand has been cancelled')}
+        ${p(`Hi ${customerName.split(' ')[0]}, we've had to cancel the errand below. We're sorry for the inconvenience.`)}
+        ${detailTable(`
+          ${detail('Service', service)}
+          ${detail('Date', date)}
+          ${detail('Time', booking.time)}
+        `)}
+        ${p(`If you paid for this errand, the refund will be back on your card within a few working days. Reply to this email if you'd like us to rebook it or if anything looks wrong.`)}
+        ${btn('Book another errand', `${SITE}/book`)}
+      `)
+    });
+
+    sendPushToUser(payer?.userId, {
+      title: 'Errand cancelled',
+      body: `Your ${service} on ${date} has been cancelled. Tap for details.`,
+      url: CUSTOMER_URL,
+      tag: `booking-${booking.id}`
+    });
+  }
+};
+
+// A failed card leaves the booking stranded on Pending payment. Without this the
+// customer believes they've booked, nothing ever happens, and nobody finds out.
+export const notifyPaymentFailed = (booking) => {
+  const payer = booking.createdByCarer || booking.customer;
+  const email = payer?.user?.email;
   if (!email) return;
 
+  const name = esc(payer?.user?.name) || 'there';
   const date = new Date(booking.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
-  const who = cancelledByRole === 'ADMIN' ? 'the ErrandBuddy team' : 'the customer';
+  const service = serviceTypeToClient(booking.serviceType);
 
   send({
     to: email,
-    subject: `Cancelled — ${serviceTypeToClient(booking.serviceType)} on ${date}`,
+    subject: `Payment didn't go through — ${service} on ${date}`,
     html: layout(`
-      ${h1('A task has been cancelled')}
-      ${p(`Hi ${name.split(' ')[0]}, the errand below has been cancelled by ${who}. <strong>Please don't travel for it.</strong>`)}
+      ${h1(`We couldn't take payment`)}
+      ${p(`Hi ${name.split(' ')[0]}, your card was declined, so your errand hasn't been booked yet. Nothing has been charged.`)}
       ${detailTable(`
-        ${detail('Service', serviceTypeToClient(booking.serviceType))}
+        ${detail('Service', service)}
         ${detail('Date', date)}
         ${detail('Time', booking.time)}
-        ${detail('Area', esc(booking.postcodeArea))}
+        ${detail('Amount', `£${Number(booking.price).toFixed(2)}`)}
       `)}
-      ${p(`If you'd already started or were on your way, reply to this email and we'll sort it out.`)}
-      ${btn('View your dashboard', `${SITE}/runner/dashboard`)}
+      ${p(`Your booking is saved — open your dashboard and tap <strong>Pay now</strong> to try again with the same or a different card.`)}
+      ${btn('Complete your booking', `${SITE}/customer/dashboard`)}
+      ${p(`If you'd rather not go ahead, you can cancel it from the same screen.`)}
     `)
   });
 
-  sendPushToUser(booking.runner?.userId, {
-    title: 'Task cancelled',
-    body: `Your ${serviceTypeToClient(booking.serviceType)} on ${date} has been cancelled. Please don't travel for it.`,
-    url: RUNNER_URL,
+  sendPushToUser(payer?.userId, {
+    title: 'Payment didn\'t go through',
+    body: `Your ${service} isn't booked yet. Tap to try paying again.`,
+    url: CUSTOMER_URL,
     tag: `booking-${booking.id}`
   });
 };
