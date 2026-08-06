@@ -256,6 +256,7 @@ export const updateBooking = async (user, id, data) => {
 
     updates.runnerId = data.runnerId;
     updates.status = 'ASSIGNED';
+    updates.assignedAt = new Date();
   }
 
   if (data.status !== undefined) {
@@ -276,6 +277,12 @@ export const updateBooking = async (user, id, data) => {
 
     assertTransition(existing.status, status);
     updates.status = status;
+    // Stamp the lifecycle so fulfilment timing is measurable. Only on an actual
+    // change of status, so a repeated PATCH doesn't move the clock.
+    if (status !== existing.status) {
+      if (status === 'CANCELLED') updates.cancelledAt = new Date();
+      if (status === 'ASSIGNED' && !existing.assignedAt) updates.assignedAt = new Date();
+    }
   }
 
   const booking = await prisma.booking.update({
@@ -312,7 +319,7 @@ export const acceptBooking = async (user, id) => {
 
   const updated = await prisma.booking.update({
     where: { id },
-    data: { runnerId: user.runnerProfile.id, status: 'ASSIGNED' },
+    data: { runnerId: user.runnerProfile.id, status: 'ASSIGNED', assignedAt: new Date() },
     include: bookingInclude
   });
 
@@ -458,7 +465,11 @@ const transitionRunnerBooking = async (user, id, requiredStatus, nextStatus) => 
 
   const updated = await prisma.booking.update({
     where: { id },
-    data: { status: nextStatus },
+    data: {
+      status: nextStatus,
+      ...(nextStatus === 'IN_PROGRESS' ? { startedAt: new Date() } : {}),
+      ...(nextStatus === 'COMPLETED' ? { completedAt: new Date() } : {})
+    },
     include: bookingInclude
   });
 
