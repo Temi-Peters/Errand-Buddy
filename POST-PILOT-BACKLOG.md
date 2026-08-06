@@ -108,6 +108,50 @@ Build in this order (value per unit of effort):
 5. **No-answer timeout rule** — the elderly-user failure mode nobody designs for:
    the customer is asleep or in another room. Needs an explicit fallback.
 
+### 5b. Auto-dispatch — the originally intended job flow
+**This was filed in P3 by mistake. It is the founder's original design for how
+errands were meant to work, described pre-pilot as:** *"as soon as someone places
+a request… any available runner (in the area first then others outside if nothing
+after a minute) gets notified via a pop up or message."*
+
+What exists instead is a pull model: runners open the app and see open jobs in
+their own postcode area, refreshed by a 45s poll. Nothing is pushed to them, and
+jobs are assigned manually from the admin dashboard.
+
+Three separate pieces, and the second is the one that gets underestimated:
+
+1. **Notify eligible runners when a job becomes available.** Must fire on the
+   transition to `PENDING` (i.e. after payment clears), *not* on creation —
+   bookings start life as `PENDING_PAYMENT`. Push already exists.
+2. **Relax the area restriction so the radius can widen.** This is not a
+   notification change, it is a permissions change. Today the area gate is
+   absolute in two places: `listBookings` only returns open jobs where
+   `postcodeArea` equals the runner's own area, and `acceptBooking` throws a hard
+   403 — *"Booking is outside your area"*. Widening after 60s means a runner
+   outside the area must be able to both see and accept the job, so the gate has
+   to become time-dependent rather than binary.
+3. **A timer.** Render's free tier sleeps, so a 60s delayed job needs an external
+   scheduler or a persistent process. Pairs with the "keep Render awake" item.
+
+Build alongside **#6b (reassignment)** and **#7 (release a job)** — all three
+share the "notify every eligible runner that this job is available" primitive,
+and building them separately means writing it three times.
+
+### 5c. Multi-church expansion has no home in the data model
+The stated plan is church → other churches → public. There is currently **no
+concept of an organisation, congregation, or tenant anywhere** in the schema —
+grep returns nothing. Everything is scoped by postcode area only.
+
+That is fine for one congregation and breaks immediately at two: you cannot tell
+which church someone came through, cannot report per-church, cannot let one
+church's coordinator see their own people without seeing everyone, and cannot run
+a second pilot without the two mixing.
+
+This is the same shape of problem as the **family/household grouping** request
+(P2) — both are "which group does this person belong to". Design them together as
+one grouping concept rather than bolting on two overlapping ones. A nullable
+`organisationId` on `User` plus an admin filter is probably the whole of v1.
+
 ### 6. Receipt photo + itemised receipt email
 Cost-of-goods is charged with **no evidence trail**. For vulnerable adults and
 their carers, "prove my mum wasn't overcharged" is a trust question, not a
@@ -256,6 +300,35 @@ caps the loss at the platform's own margin.
 
 ---
 
+### 13. Nothing measures whether the pilot worked
+The pilot's stated purpose is *"to judge whether its a viable product that can
+scale."* Nothing in the app currently captures the data needed to judge that.
+
+`/api/admin/overview` gives running totals — bookings, revenue, commission,
+active runners. Useful for operations, useless for the question being asked,
+because totals can't distinguish ten people booking once from one person booking
+ten times. There is no cohort view, no repeat-booking rate, no funnel, no
+time-to-assignment, no drop-off tracking.
+
+The three numbers that actually answer "is this viable":
+- **Repeat rate** — what share of customers book a second time, and how long it
+  takes. This is the single most important number for a marketplace and it is
+  entirely absent.
+- **Fulfilment** — what share of bookings get accepted, how long assignment takes,
+  and how many are cancelled or abandoned. Ties directly to auto-dispatch (#5b)
+  being worth building.
+- **Drop-off** — where people abandon the 6-step booking flow. Requires
+  instrumenting the steps; today an abandoned booking is indistinguishable from
+  one that was never started.
+
+Cheap v1: an admin page reading what the database already holds — bookings per
+customer over time, time between `PENDING` and `ASSIGNED`, and counts by final
+status. No new tracking, no third-party analytics, no consent banner. Do this
+before the rescheduled pilot, or that pilot produces anecdotes instead of
+evidence.
+
+---
+
 ## P2 — Worth doing
 
 | Item | Note |
@@ -276,7 +349,7 @@ caps the loss at the platform's own margin.
 | Runner day / schedule view | Grouped by status only — no "today", no run sheet. |
 | Availability toggle | No OFFLINE state and no working hours. A runner on holiday can't stop being shown jobs. `availabilityNotes` is free text nothing reads. |
 | In-app support entry point for runners | No "report a problem" anywhere on the dashboard. |
-| Family / household grouping (original request) | **Known hole:** a runner blocked from their own household's job can leave the household, take the job, and rejoin — guards read live membership. Needs membership history or a booking-time snapshot. For ~10 families an admin-only notes field may be enough. |
+| Family / household grouping (original request) | Stated purpose was operational — *"easier to identify who is associated with who"* — not a permissions feature, so keep it as a label. **Known hole if it ever gates anything:** a runner blocked from their own household's job can leave the household, take the job, and rejoin, because guards read live membership. Needs membership history or a booking-time snapshot. For ~10 families an admin-only field may be the whole answer. **Design together with #5c (multi-church)** — same underlying "which group is this person in" problem. |
 
 ---
 
@@ -286,9 +359,7 @@ caps the loss at the platform's own margin.
 - Paste-a-list free-text parsing into line items
 - Reject at the door, no questions asked
 - Substitution summary sent before arrival
-- Auto-dispatch: notify area runners on new job, widen radius after 60s (needs an
-  external scheduler — Render free tier sleeps). Must fire on `PENDING`, not at
-  creation, since bookings start `PENDING_PAYMENT`.
+- *(Auto-dispatch moved up to P1 #5b — it was wrongly filed here.)*
 - Completed task list pagination (grows forever, unpaginated)
 - Start-task date guard (a task can be started days early, firing "your errand is
   underway")
