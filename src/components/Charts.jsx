@@ -103,7 +103,9 @@ export function BarChartHorizontal({ data, dataKey, yKey, title, prefix = '', su
 
 // ─── Multi-bar chart ──────────────────────────────────────────────────────────
 
-export function MultiBarChart({ data, bars, xKey, title, prefix = '' }) {
+// allowDecimals defaults to true so existing callers are unchanged; pass false
+// for counts, where recharts otherwise invents ticks like 2.25 bookings.
+export function MultiBarChart({ data, bars, xKey, title, prefix = '', allowDecimals = true }) {
   if (!data.length) return <EmptyState />;
 
   return (
@@ -113,10 +115,14 @@ export function MultiBarChart({ data, bars, xKey, title, prefix = '' }) {
         <BarChart data={data} barCategoryGap="30%">
           <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: 'var(--chart-bar)' }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 11, fill: 'var(--chart-bar)' }} axisLine={false} tickLine={false}
-            tickFormatter={(v) => `${prefix}${v}`} width={44} />
+            allowDecimals={allowDecimals} tickFormatter={(v) => `${prefix}${v}`} width={44} />
           <Tooltip {...tooltipStyle} formatter={(v) => [`${prefix}${Number(v) % 1 === 0 ? v : Number(v).toFixed(2)}`]} />
+          {/* No entry animation: recharts draws animated bars via requestAnimationFrame,
+              which never fires in a backgrounded tab — the bars then stay permanently
+              undrawn. Rendering immediately also respects reduced-motion and makes
+              the chart safe to print or screenshot. */}
           {bars.map(({ key, label, color }) => (
-            <Bar key={key} dataKey={key} name={label} fill={color} radius={[4, 4, 0, 0]} maxBarSize={36} />
+            <Bar key={key} dataKey={key} name={label} fill={color} radius={[4, 4, 0, 0]} maxBarSize={36} isAnimationActive={false} />
           ))}
         </BarChart>
       </ResponsiveContainer>

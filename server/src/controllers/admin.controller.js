@@ -1,5 +1,6 @@
 import { prisma } from '../config/prisma.js';
 import { adminDeleteUser } from '../services/adminUsers.service.js';
+import { getInsights } from '../services/insights.service.js';
 import { bookingToClient, runnerToClient } from '../utils/serializers.js';
 
 export const overview = async (req, res, next) => {
@@ -47,6 +48,14 @@ export const deleteUser = async (req, res, next) => {
       force: req.body?.force === true
     });
     res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const insights = async (req, res, next) => {
+  try {
+    res.json(await getInsights());
   } catch (error) {
     next(error);
   }

@@ -61,6 +61,7 @@ export const api = {
   forgotPassword: (email) => request('/auth/forgot-password', { method: 'POST', body: { email } }),
   resetPassword: (token, password) => request('/auth/reset-password', { method: 'POST', body: { token, password } }),
   adminDeleteUser: (userId, body = {}) => request(`/admin/users/${userId}`, { method: 'DELETE', body }),
+  adminInsights: () => request('/admin/insights'),
   me: () => request('/auth/me'),
   bookings: () => request('/bookings'),
   createBooking: (data) => request('/bookings', { method: 'POST', body: data }),

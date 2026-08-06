@@ -217,6 +217,14 @@ model Booking {
   payment              Payment?
   messages             Message[]
   claims               Claim[]
+  // Lifecycle stamps. updatedAt only ever shows the LAST change, so without these
+  // there is no way to ask how long a booking waited for a runner or how long the
+  // errand took — the two numbers that say whether the model actually works.
+  // Only populated from the point these were added; older rows stay null.
+  assignedAt           DateTime?
+  startedAt            DateTime?
+  completedAt          DateTime?
+  cancelledAt          DateTime?
   overageCoveredAmount Decimal?         @db.Decimal(10, 2)
   overageCoveredAt     DateTime?
   onHoldUntil          DateTime?
@@ -229,6 +237,7 @@ model Booking {
   @@index([runnerId])
   @@index([status])
   @@index([createdByCarerId])
+  @@index([createdAt])
 }
 
 model Review {
