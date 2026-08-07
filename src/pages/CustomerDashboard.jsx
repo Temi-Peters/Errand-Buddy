@@ -8,6 +8,9 @@ import AvatarUpload from '../components/AvatarUpload';
 import BookingCard from '../components/BookingCard';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import SubstitutionRequests from '../components/SubstitutionRequests';
+import { GuideModal, HelpButton, hasSeenGuide } from '../components/GuideCards';
+import { customerGuide } from '../data/guides';
 import { BarChartHorizontal, DonutChart } from '../components/Charts';
 import CheckoutForm from '../components/CheckoutForm';
 import Modal from '../components/Modal';
@@ -40,6 +43,41 @@ export default function CustomerDashboard() {
   const [editing, setEditing] = useState(false);
   const [profileForm, setProfileForm] = useState(null);
   const [profileSaving, setProfileSaving] = useState(false);
+
+  // Any item where the runner is waiting on an answer. Fetched for live bookings
+  // only, and refreshed on the existing 45s cadence — a runner standing in a shop
+  // cannot wait for the customer to go looking for this.
+  const [subs, setSubs] = useState([]);
+  // Opens itself once per person, then only on demand from Help.
+  const [showGuide, setShowGuide] = useState(() => !hasSeenGuide('customer'));
+
+  useEffect(() => {
+    const live = bookings.filter((b) => ['Assigned', 'In Progress'].includes(b.status) && b.itemCount > 0);
+    if (!live.length) { setSubs([]); return; }
+    let cancelled = false;
+    Promise.all(live.map((b) =>
+      api.bookingDetail(b.id)
+        .then((d) => ({ booking: b, items: d.items || [] }))
+        .catch(() => ({ booking: b, items: [] }))
+    )).then((results) => {
+      if (cancelled) return;
+      setSubs(results.filter((r) => r.items.some((i) => i.status === 'AWAITING_APPROVAL')));
+    });
+    return () => { cancelled = true; };
+  }, [bookings]);
+
+  const decideSub = async (bookingId, itemId, approved) => {
+    try {
+      await api.decideSubstitute(bookingId, itemId, approved);
+      const d = await api.bookingDetail(bookingId);
+      setSubs((current) => current
+        .map((r) => (r.booking.id === bookingId ? { ...r, items: d.items } : r))
+        .filter((r) => r.items.some((i) => i.status === 'AWAITING_APPROVAL')));
+      showToast(approved ? 'Thanks — your runner has been told' : 'Your runner will leave it off');
+    } catch (err) {
+      showToast(err.message || 'Could not send your answer', 'error');
+    }
+  };
 
   // Pay-now state (for PENDING_PAYMENT bookings)
   const [payNowBooking, setPayNowBooking] = useState(null);
@@ -288,15 +326,22 @@ export default function CustomerDashboard() {
   return (
     <div className="space-y-6">
 
+      {showGuide && <GuideModal guide={customerGuide} role="customer" onClose={() => setShowGuide(false)} />}
+
       {/* Banner */}
-      <div className="rounded-2xl bg-stone-900 p-5 text-white shadow-lift sm:p-6 dark:bg-zinc-900">
-        <p className="text-xs font-semibold uppercase tracking-widest text-stone-400">Customer dashboard</p>
-        <h1 className="mt-2 text-2xl font-bold sm:text-3xl">Welcome back, {authUser.name.split(' ')[0]}.</h1>
-        <p className="mt-1 text-stone-400">
-          {activeBookings.length > 0
-            ? `You have ${activeBookings.length} active ${activeBookings.length === 1 ? 'booking' : 'bookings'}.`
-            : 'No active bookings right now.'}
-        </p>
+      <div className="flex items-start gap-4 rounded-2xl bg-stone-900 p-5 text-white shadow-lift sm:p-6 dark:bg-zinc-900">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-stone-400">Customer dashboard</p>
+          <h1 className="mt-2 text-2xl font-bold sm:text-3xl">Welcome back, {authUser.name.split(' ')[0]}.</h1>
+          <p className="mt-1 text-stone-400">
+            {activeBookings.length > 0
+              ? `You have ${activeBookings.length} active ${activeBookings.length === 1 ? 'booking' : 'bookings'}.`
+              : 'No active bookings right now.'}
+          </p>
+        </div>
+        <div className="ml-auto shrink-0">
+          <HelpButton className="border-stone-700 text-stone-300" onClick={() => setShowGuide(true)} />
+        </div>
       </div>
 
       {/* Tab bar */}
@@ -317,6 +362,18 @@ export default function CustomerDashboard() {
           ))}
         </div>
       </div>
+
+      {/* Shown above the tabs, on every tab: a runner is standing in a shop
+          waiting for this answer, so it must not be buried behind navigation. */}
+      {subs.map(({ booking, items }) => (
+        <div key={booking.id} className="mb-4">
+          <SubstitutionRequests
+            items={items}
+            bookingLabel={`${booking.serviceType} · ${booking.date}`}
+            onDecide={(itemId, approved) => decideSub(booking.id, itemId, approved)}
+          />
+        </div>
+      ))}
 
       {/* ── Overview ─────────────────────────────────────────────────────── */}
       {activeTab === 'Overview' && (

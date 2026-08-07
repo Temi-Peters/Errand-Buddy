@@ -19,7 +19,7 @@ import { claimsRouter } from './routes/claims.routes.js';
 import { accountRouter } from './routes/account.routes.js';
 import { handleWebhook } from './controllers/payments.controller.js';
 import { upload as uploadRunnerDoc } from './controllers/runnerDocs.controller.js';
-import { postPhoto as postBookingPhoto } from './controllers/bookingDetail.controller.js';
+import { postPhoto as postBookingPhoto, postSubstitute as postBookingSubstitute } from './controllers/bookingDetail.controller.js';
 import { requireAuth } from './middleware/auth.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 
@@ -55,6 +55,9 @@ app.post('/api/runners/documents', express.json({ limit: '12mb' }), requireAuth,
 // JSON limit. Same pattern as the runner-document upload: its own parser, ahead
 // of the global one, so a photo never trips the 100kb default.
 app.post('/api/bookings/:id/photos', express.json({ limit: '8mb' }), requireAuth, postBookingPhoto);
+// Proposing a substitute carries a photo of the shelf, so it needs the same
+// treatment — otherwise the runner's offer trips the default body limit.
+app.post('/api/bookings/:id/items/:itemId/substitute', express.json({ limit: '8mb' }), requireAuth, postBookingSubstitute);
 
 app.use(express.json());
 

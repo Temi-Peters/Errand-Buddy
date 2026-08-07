@@ -1,5 +1,6 @@
 import { prisma } from '../config/prisma.js';
 import { ApiError } from '../middleware/errorHandler.js';
+import { notifySubstituteDecided, notifySubstituteProposed } from './notification.service.js';
 
 // Shopping-list items and photos for a booking. Kept out of bookings.service so
 // the booking list — polled every 45s — never carries image payloads; the list
@@ -35,14 +36,19 @@ const loadBooking = async (user, bookingId) => {
   return { booking, isCustomer, isRunner };
 };
 
-export const itemToClient = (item) => ({
+export const itemToClient = (item, photos = []) => ({
   id: item.id,
   position: item.position,
   name: item.name,
   quantity: item.quantity || '',
   backupName: item.backupName || null,
   status: item.status,
-  substitutedWith: item.substitutedWith || null
+  proposedSubstitute: item.proposedSubstitute || null,
+  proposedAt: item.proposedAt ? item.proposedAt.toISOString() : null,
+  substitutedWith: item.substitutedWith || null,
+  // A picture of what's actually on the shelf. Far more use to someone who can't
+  // picture an alternative from a product name.
+  substitutePhoto: photos.find((p) => p.itemId === item.id && p.kind === 'SUBSTITUTE')?.dataUrl || null
 });
 
 export const photoToClient = (photo) => ({
@@ -61,7 +67,7 @@ export const getBookingDetail = async (user, bookingId) => {
     prisma.bookingPhoto.findMany({ where: { bookingId }, orderBy: { createdAt: 'asc' } })
   ]);
 
-  return { items: items.map(itemToClient), photos: photos.map(photoToClient) };
+  return { items: items.map((item) => itemToClient(item, photos)), photos: photos.map(photoToClient) };
 };
 
 // Replaces the whole list. Only the customer side edits it, and only while the
@@ -92,7 +98,9 @@ export const replaceItems = async (user, bookingId, items) => {
   ]);
 
   const saved = await prisma.bookingItem.findMany({ where: { bookingId }, orderBy: { position: 'asc' } });
-  return saved.map(itemToClient);
+  // Wrapped, not passed by reference: Array.map hands the index as the second
+  // argument, which itemToClient would read as the photos array.
+  return saved.map((item) => itemToClient(item));
 };
 
 // The runner marking off what happened to one item. This is the whole point of
@@ -111,11 +119,81 @@ export const updateItemStatus = async (user, bookingId, itemId, { status, substi
       status,
       // Only a substitution carries a replacement name; clear it otherwise so a
       // corrected status can't leave a stale "bought instead" hanging around.
-      substitutedWith: status === 'SUBSTITUTED' ? String(substitutedWith || '').trim().slice(0, 200) || null : null
+      substitutedWith: status === 'SUBSTITUTED' ? String(substitutedWith || '').trim().slice(0, 200) || null : null,
+      // Moving away from AWAITING_APPROVAL retires the pending offer.
+      ...(status === 'AWAITING_APPROVAL' ? {} : { proposedSubstitute: null, proposedAt: null })
     }
   });
 
   return itemToClient(updated);
+};
+
+// The runner, standing in the aisle, offers a replacement. The customer is
+// pushed a notification with the photo and answers yes or no — which is the
+// whole point: an alternative is far easier to judge from a picture than a name.
+export const proposeSubstitute = async (user, bookingId, itemId, { name, dataUrl }) => {
+  const { booking, isRunner } = await loadBooking(user, bookingId);
+  if (!isRunner && user.role !== 'ADMIN') throw new ApiError(403, 'Only the assigned runner can suggest a replacement');
+
+  const item = await prisma.bookingItem.findUnique({ where: { id: itemId } });
+  if (!item || item.bookingId !== bookingId) throw new ApiError(404, 'Item not found on this booking');
+
+  const proposed = String(name || '').trim().slice(0, 200);
+  if (!proposed) throw new ApiError(400, 'Say what you would get instead');
+
+  if (dataUrl) {
+    const url = String(dataUrl);
+    if (!ALLOWED_PREFIXES.some((prefix) => url.startsWith(prefix))) {
+      throw new ApiError(400, 'Photo must be a JPEG, PNG or WebP image');
+    }
+    if (url.length > MAX_DATA_URL_CHARS) throw new ApiError(400, 'That image is too large — please try a smaller photo');
+    // One picture per item: a new offer replaces the last.
+    await prisma.bookingPhoto.deleteMany({ where: { bookingId, itemId, kind: 'SUBSTITUTE' } });
+    await prisma.bookingPhoto.create({
+      data: { bookingId, itemId, kind: 'SUBSTITUTE', dataUrl: url, uploadedById: user.id }
+    });
+  }
+
+  const updated = await prisma.bookingItem.update({
+    where: { id: itemId },
+    data: { status: 'AWAITING_APPROVAL', proposedSubstitute: proposed, proposedAt: new Date(), substitutedWith: null }
+  });
+
+  const full = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: { customer: { include: { user: true } }, createdByCarer: { include: { user: true } } }
+  });
+  notifySubstituteProposed(full, { itemName: item.name, proposed });
+
+  const photos = await prisma.bookingPhoto.findMany({ where: { bookingId } });
+  return itemToClient(updated, photos);
+};
+
+// The customer's answer. Approving records what was actually bought; declining
+// marks the line unavailable so the runner knows to leave it.
+export const decideSubstitute = async (user, bookingId, itemId, approved) => {
+  const { isCustomer } = await loadBooking(user, bookingId);
+  if (!isCustomer && user.role !== 'ADMIN') throw new ApiError(403, 'Only the customer can answer this');
+
+  const item = await prisma.bookingItem.findUnique({ where: { id: itemId } });
+  if (!item || item.bookingId !== bookingId) throw new ApiError(404, 'Item not found on this booking');
+  if (item.status !== 'AWAITING_APPROVAL') throw new ApiError(409, 'There is nothing waiting for an answer on this item');
+
+  const updated = await prisma.bookingItem.update({
+    where: { id: itemId },
+    data: approved
+      ? { status: 'SUBSTITUTED', substitutedWith: item.proposedSubstitute, proposedSubstitute: null, proposedAt: null }
+      : { status: 'UNAVAILABLE', substitutedWith: null, proposedSubstitute: null, proposedAt: null }
+  });
+
+  const full = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: { runner: { include: { user: true } } }
+  });
+  notifySubstituteDecided(full, { itemName: item.name, proposed: item.proposedSubstitute, approved });
+
+  const photos = await prisma.bookingPhoto.findMany({ where: { bookingId } });
+  return itemToClient(updated, photos);
 };
 
 export const addPhoto = async (user, bookingId, { kind, dataUrl, caption }) => {

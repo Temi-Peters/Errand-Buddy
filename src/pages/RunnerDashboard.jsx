@@ -10,6 +10,8 @@ import Avatar from '../components/Avatar';
 import AvatarUpload from '../components/AvatarUpload';
 import VerifiedBadge, { RunnerRating } from '../components/VerifiedBadge';
 import PhotoUpload from '../components/PhotoUpload';
+import { GuideModal, HelpButton, hasSeenGuide } from '../components/GuideCards';
+import { runnerGuide } from '../data/guides';
 import { BarChartHorizontal, BarChartVertical } from '../components/Charts';
 import Modal from '../components/Modal';
 import { useApp } from '../context/AppContext';
@@ -75,6 +77,11 @@ export default function RunnerDashboard() {
   const [goodsCost, setGoodsCost] = useState('');
   const [overageReason, setOverageReason] = useState('');
   const [detail, setDetail] = useState({ items: [], photos: [] });
+  const [showGuide, setShowGuide] = useState(() => !hasSeenGuide('runner'));
+  const [asking, setAsking] = useState(null); // item we're proposing a swap for
+  const [askName, setAskName] = useState('');
+  const [askPhoto, setAskPhoto] = useState(null);
+  const [askBusy, setAskBusy] = useState(false);
   const [completeLoading, setCompleteLoading] = useState(false);
   const runner = runners.find((item) => item.id === authUser.id);
 
@@ -132,6 +139,23 @@ export default function RunnerDashboard() {
       setDetail((d) => ({ ...d, items: d.items.map((i) => (i.id === item.id ? item : i)) }));
     } catch (err) {
       showToast(err.message || 'Could not update that item', 'error');
+    }
+  };
+
+  const sendProposal = async () => {
+    if (!askName.trim()) { showToast('Say what you would get instead', 'error'); return; }
+    setAskBusy(true);
+    try {
+      const { item } = await api.proposeSubstitute(completingBooking.id, asking.id, {
+        name: askName.trim(), dataUrl: askPhoto || undefined
+      });
+      setDetail((d) => ({ ...d, items: d.items.map((i) => (i.id === item.id ? item : i)) }));
+      setAsking(null); setAskName(''); setAskPhoto(null);
+      showToast('Sent — your customer has been notified');
+    } catch (err) {
+      showToast(err.message || 'Could not send that', 'error');
+    } finally {
+      setAskBusy(false);
     }
   };
 
@@ -271,7 +295,11 @@ export default function RunnerDashboard() {
           </div>
           <p className="mt-1 text-stone-400">{runner.area} · {runner.status === 'Active' ? 'Active runner' : `${runner.status} runner`}</p>
         </div>
+        <div className="ml-auto">
+          <HelpButton className="border-stone-700 text-stone-300" onClick={() => setShowGuide(true)} />
+        </div>
       </div>
+      {showGuide && <GuideModal guide={runnerGuide} role="runner" onClose={() => setShowGuide(false)} />}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4"><Card><ClipboardList className="text-primary" /><p className="mt-3 text-sm font-bold text-muted">Available nearby</p><p className="text-3xl font-black">{available.length}</p></Card><Card><CheckCircle2 className="text-secondary" /><p className="mt-3 text-sm font-bold text-muted">Completed</p><p className="text-3xl font-black">{completed.length}</p></Card><Card><WalletCards className="text-primary" /><p className="mt-3 text-sm font-bold text-muted">Earnings</p><p className="text-3xl font-black">£{earnings.toFixed(0)}</p></Card><Card><Star className="text-amber-500" /><p className="mt-3 text-sm font-bold text-muted">Rating</p><div className="mt-1"><RunnerRating runner={runner} /></div></Card></div>
       <div className="flex justify-center">
         <div className="flex gap-2 overflow-x-auto rounded-xl bg-surface-hi p-2">
@@ -497,6 +525,35 @@ export default function RunnerDashboard() {
         return <div key={message.id} className={`rounded-lg p-3 ${fromMe ? 'ml-8 bg-stone-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'mr-8 bg-surface text-ink'}`}><p className="font-bold">{fromMe ? 'You' : message.senderName}</p><p>{message.body}</p></div>;
       }) : <p className="text-muted">No messages yet.</p>}</div><textarea className="focus-ring min-h-24 w-full rounded-lg border border-surface-hi p-3" placeholder="Type a message" value={messageBody} onChange={(event) => setMessageBody(event.target.value)} /><Button className="w-full" loading={messageLoading} disabled={!messageBody.trim()} onClick={submitMessage}>Send message</Button></div></Modal>}
 
+      {asking && (
+        <Modal title={`Not got ${asking.name}?`} onClose={() => { setAsking(null); setAskName(''); setAskPhoto(null); }}>
+          <div className="space-y-4">
+            <p className="text-sm text-muted">
+              Suggest something else and they'll get a notification straight away. A photo of the shelf helps them decide.
+            </p>
+            <label className="block">
+              <span className="text-sm font-bold text-ink">What would you get instead?</span>
+              <input
+                className="focus-ring mt-1 min-h-11 w-full rounded-lg border border-surface-hi px-3"
+                placeholder="e.g. Warburtons Toastie 800g"
+                value={askName}
+                onChange={(e) => setAskName(e.target.value)}
+                autoFocus
+              />
+            </label>
+            <PhotoUpload
+              kind="SUBSTITUTE"
+              label="Photo of the alternative (optional)"
+              max={1}
+              photos={askPhoto ? [{ id: 'tmp', kind: 'SUBSTITUTE', dataUrl: askPhoto }] : []}
+              onAdd={({ dataUrl }) => setAskPhoto(dataUrl)}
+              onRemove={() => setAskPhoto(null)}
+            />
+            <Button className="w-full" loading={askBusy} onClick={sendProposal}>Ask the customer</Button>
+          </div>
+        </Modal>
+      )}
+
       {completingBooking && (
         <Modal title="Complete task" onClose={() => { setCompletingBooking(null); setGoodsCost(''); }}>
           <div className="space-y-4">
@@ -521,7 +578,6 @@ export default function RunnerDashboard() {
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {[
                         { key: 'BOUGHT', label: 'Got it' },
-                        { key: 'SUBSTITUTED', label: 'Swapped' },
                         { key: 'UNAVAILABLE', label: "Couldn't get" }
                       ].map((option) => (
                         <button
@@ -534,13 +590,24 @@ export default function RunnerDashboard() {
                         </button>
                       ))}
                     </div>
-                    {item.status === 'SUBSTITUTED' && (
-                      <input
-                        className="focus-ring mt-2 min-h-10 w-full rounded-lg border border-surface-hi px-3 text-sm"
-                        placeholder="What did you get instead?"
-                        defaultValue={item.substitutedWith || ''}
-                        onBlur={(e) => setItemStatus(item.id, 'SUBSTITUTED', e.target.value)}
-                      />
+                      {/* Rather than guessing, offer a swap and let them decide
+                          while you're still in front of the shelf. */}
+                      <button
+                        type="button"
+                        onClick={() => { setAsking(item); setAskName(item.backupName || ''); setAskPhoto(null); }}
+                        className="min-h-9 rounded-lg border border-surface-hi px-3 text-xs font-semibold text-muted"
+                      >
+                        Ask customer
+                      </button>
+                    {item.status === 'AWAITING_APPROVAL' && (
+                      <p className="mt-2 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                        Waiting on an answer about {item.proposedSubstitute}…
+                      </p>
+                    )}
+                    {item.status === 'SUBSTITUTED' && item.substitutedWith && (
+                      <p className="mt-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                        Approved — get {item.substitutedWith}
+                      </p>
                     )}
                   </div>
                 ))}

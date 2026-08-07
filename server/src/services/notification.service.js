@@ -624,6 +624,47 @@ export const notifyGoodsOverage = (booking, { overage, budget, goodsCost, reason
   });
 };
 
+// The runner is standing in the shop waiting. This has to reach the customer
+// now, so it leads with push; the email is the fallback for anyone who hasn't
+// enabled notifications.
+export const notifySubstituteProposed = (booking, { itemName, proposed }) => {
+  const payer = booking.createdByCarer || booking.customer;
+  if (!payer?.user?.email) return;
+  const name = esc(payer.user.name) || 'there';
+
+  sendPushToUser(payer.userId, {
+    title: `${itemName} isn't available`,
+    body: `Your runner suggests ${proposed}. Tap to say yes or no — they're waiting in the shop.`,
+    url: CUSTOMER_URL,
+    tag: `sub-${booking.id}`
+  });
+
+  send({
+    to: payer.user.email,
+    subject: `Quick question about your shopping — ${esc(itemName)}`,
+    html: layout(`
+      ${h1('Your runner needs an answer')}
+      ${p(`Hi ${name.split(' ')[0]}, <strong>${esc(itemName)}</strong> isn't on the shelf. Your runner suggests <strong>${esc(proposed)}</strong> instead.`)}
+      ${p(`They're waiting in the shop, so the quickest thing is to open your bookings and tap yes or no.`)}
+      ${btn('Answer now', `${SITE}/customer/dashboard`)}
+      ${p(`If you don't get to it in time they'll leave the item off rather than guess.`)}
+    `)
+  });
+};
+
+// Close the loop for the runner, who is still standing there.
+export const notifySubstituteDecided = (booking, { itemName, proposed, approved }) => {
+  if (!booking.runner?.userId) return;
+  sendPushToUser(booking.runner.userId, {
+    title: approved ? `Yes to ${proposed}` : `No thanks — skip ${itemName}`,
+    body: approved
+      ? `They're happy with ${proposed} instead of ${itemName}.`
+      : `Leave ${itemName} off the list.`,
+    url: RUNNER_URL,
+    tag: `sub-${booking.id}`
+  });
+};
+
 // A failed card leaves the booking stranded on Pending payment. Without this the
 // customer believes they've booked, nothing ever happens, and nobody finds out.
 export const notifyPaymentFailed = (booking) => {

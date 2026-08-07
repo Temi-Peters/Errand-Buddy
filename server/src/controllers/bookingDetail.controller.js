@@ -1,5 +1,7 @@
 import {
   addPhoto,
+  decideSubstitute,
+  proposeSubstitute,
   deletePhoto,
   getBookingDetail,
   replaceItems,
@@ -42,6 +44,22 @@ export const removePhoto = async (req, res, next) => {
   try {
     await deletePhoto(req.user, req.params.id, req.params.photoId);
     res.json({ ok: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const postSubstitute = async (req, res, next) => {
+  try {
+    res.json({ item: await proposeSubstitute(req.user, req.params.id, req.params.itemId, req.body || {}) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const postSubstituteDecision = async (req, res, next) => {
+  try {
+    res.json({ item: await decideSubstitute(req.user, req.params.id, req.params.itemId, req.body?.approved === true) });
   } catch (error) {
     next(error);
   }

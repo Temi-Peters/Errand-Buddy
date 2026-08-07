@@ -10,7 +10,7 @@ import {
   update
 } from '../controllers/bookings.controller.js';
 import { create as createMessage, index as listMessages } from '../controllers/messages.controller.js';
-import { detail, patchItem, putItems, removePhoto } from '../controllers/bookingDetail.controller.js';
+import { detail, patchItem, postSubstituteDecision, putItems, removePhoto } from '../controllers/bookingDetail.controller.js';
 import { requireAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import {
@@ -39,5 +39,6 @@ bookingsRouter.get('/:id/detail', validate(bookingIdSchema), detail);
 bookingsRouter.put('/:id/items', validate(bookingItemsSchema), putItems);
 bookingsRouter.patch('/:id/items/:itemId', validate(itemStatusSchema), patchItem);
 bookingsRouter.delete('/:id/photos/:photoId', removePhoto);
+bookingsRouter.post('/:id/items/:itemId/decision', postSubstituteDecision);
 bookingsRouter.post('/:id/review', validate(reviewSchema), review);
 bookingsRouter.post('/:id/resume-payment', validate(bookingIdSchema), resumePayment);

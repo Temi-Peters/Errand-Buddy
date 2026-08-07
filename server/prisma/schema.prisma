@@ -56,6 +56,8 @@ enum CarerLinkStatus {
 enum ItemStatus {
   PENDING
   BOUGHT
+  // Runner has proposed a replacement and is waiting in the shop for an answer.
+  AWAITING_APPROVAL
   SUBSTITUTED
   UNAVAILABLE
 }
@@ -65,6 +67,8 @@ enum ItemStatus {
 enum PhotoKind {
   REQUEST
   RECEIPT
+  // A photo of the alternative on the shelf, attached to the item in question.
+  SUBSTITUTE
 }
 
 enum SubstitutionPreference {
@@ -288,6 +292,10 @@ model BookingItem {
   // is, and it removes a phone call while the runner stands in the aisle.
   backupName     String?
   status         ItemStatus @default(PENDING)
+  // What the runner is offering, before the customer has answered. Kept apart
+  // from substitutedWith so a declined proposal doesn't read as something bought.
+  proposedSubstitute String?
+  proposedAt         DateTime?
   substitutedWith String?
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
@@ -304,6 +312,9 @@ model BookingPhoto {
   bookingId    String
   booking      Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   kind         PhotoKind
+  // Set for SUBSTITUTE photos so the picture sits against the right line of the
+  // list rather than floating loose on the booking.
+  itemId       String?
   dataUrl      String
   caption      String?
   uploadedById String?
@@ -311,6 +322,7 @@ model BookingPhoto {
 
   @@index([bookingId])
   @@index([bookingId, kind])
+  @@index([itemId])
 }
 
 model Review {
