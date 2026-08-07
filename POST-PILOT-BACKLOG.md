@@ -170,34 +170,55 @@ the auto-dispatch item in P3 — build them together, since they share the same
 "notify eligible runners" primitive. Note the notification must fire on the
 booking being *available*, not on creation.
 
-### 6c. Runner virtual card (research first, then decide)
-*(Founder's idea, 31 July.)* Instead of the runner fronting their own money and
-being reimbursed, issue them a virtual card tied to a balance that they spend at
-the shop. All the existing refund / reimbursement / top-up rules would still
-apply.
+### 6c. Runner spending card — Stripe Issuing (researched 7 Aug)
+*(Founder's idea.)* Give the runner a card to spend at the shop instead of
+fronting their own money and claiming it back.
 
-**This is a good instinct and it may be the right long-term answer** — it removes
-the runner's cash-flow burden entirely, which is one of the biggest reasons small
-errand platforms lose runners. Instacart and Shipt both work this way.
+**Yes, it stays entirely within Stripe** — but it is a third Stripe product,
+separate from Payments and Connect: **Stripe Issuing**, confirmed available in
+the UK.
 
-Research before committing:
-- **Stripe Issuing** is the obvious route — it is built for exactly this: issue
-  virtual cards, fund them from the platform balance, and constrain spend with
-  authorisation controls (merchant category, per-transaction cap, single-use
-  cards tied to one booking). Check current UK eligibility, pricing, and the
-  application/approval process, which is not automatic.
-- **Regulatory note, important:** this is *not* the same problem as the customer
-  wallet. A customer wallet is money **you owe back to a customer**. A funded
-  card is **your own money being spent on your own obligation**. So it does not
-  obviously reintroduce the e-money issue — but it must be confirmed, and it only
-  works if the customer has already paid, which means it depends on the pre-auth
-  + capture work in P0 #1 landing first.
-- **Fallback if Issuing isn't available:** a per-errand spend cap with the runner
-  fronting and same-day reimbursement, or a small number of shared physical cards
-  held by trusted runners for a pilot-scale operation.
-- Consider single-use cards scoped to one booking with the cap set to the
-  authorised goods estimate — that also solves the "runner typed any number up to
-  £1000" problem in P0 #2.
+**THE FRAMING MATTERS.** The idea was described as a card "linked to a customer's
+balance". Built that way it re-creates the exact e-money problem the wallet had:
+a customer balance you hold and owe back. The safe version is the opposite —
+the card is funded from **ErrandBuddy's own Issuing balance**, spending money the
+customer has *already paid* for that specific errand. Your money, your
+obligation, no stored value owed to anyone. Same card, completely different
+regulatory position.
+
+**How it would slot into the flow:**
+1. Customer books and sets a goods budget; their card is pre-authorised for the
+   service fee plus that estimate.
+2. Runner accepts. When they start shopping, a single-use virtual card is issued,
+   capped at the agreed budget.
+3. Runner pays at the till via Apple/Google Pay.
+4. The real spend comes back on the authorisation webhook — merchant, amount,
+   time — which is a far better evidence trail than a typed number and a photo.
+5. Capture from the customer only what was actually spent.
+
+It would solve three existing problems at once: the runner cash-flow burden (a
+top reason small platforms lose runners), the unvalidated "type any number up to
+£1000" box, and the overage conversation — the card simply declines instead.
+
+**Why it is NOT next:**
+- **Separate approval.** Issuing is applied for and reviewed; it is not a toggle.
+  A pre-revenue platform may be asked to come back with volume.
+- **It needs working capital.** The Issuing balance is funded by transferring
+  from the Stripe balance or topping up from a bank account — so the money has to
+  be there *before* the runner shops. First payouts take ~7 days, so early on
+  this is float out of pocket. Pilot scale is a few hundred pounds; at scale it
+  is a genuine working-capital line.
+- **Real-time authorisation.** Approving a transaction at the till means
+  responding to a webhook in seconds. A sleeping free-tier server would decline
+  the runner's card in the shop. This forces a paid instance.
+- **Order.** Depends on pre-auth + capture via Connect (P0 #1) landing first,
+  since the card spends money the customer has already committed.
+
+**Cheaper interim:** keep the runner fronting, but reimburse same-day rather than
+on the Stripe payout cycle. No approval, no float, keeps most of the goodwill.
+
+Sources: https://docs.stripe.com/issuing · https://stripe.com/gb/issuing ·
+https://docs.stripe.com/issuing/global
 
 ### 7. Release an accepted job
 If a runner's car won't start, their only options today are to phone someone or
