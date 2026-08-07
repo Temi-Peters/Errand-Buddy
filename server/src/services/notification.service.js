@@ -561,6 +561,58 @@ export const notifyBookingCancelled = (booking, { cancelledByRole } = {}) => {
   }
 };
 
+// The shopping came to more than the customer agreed. They are charged only up to
+// their budget; the excess is held for them to approve. Both sides need telling —
+// the customer because it's their money, the runner because they fronted it.
+export const notifyGoodsOverage = (booking, { overage, budget, goodsCost, reason }) => {
+  const service = serviceTypeToClient(booking.serviceType);
+  const payer = booking.createdByCarer || booking.customer;
+  const money = (v) => `£${Number(v || 0).toFixed(2)}`;
+
+  if (payer?.user?.email) {
+    const name = esc(payer.user.name) || 'there';
+    send({
+      to: payer.user.email,
+      subject: `Your shopping came to ${money(goodsCost)} — ${money(overage)} over budget`,
+      html: layout(`
+        ${h1('Your shopping went over budget')}
+        ${p(`Hi ${name.split(' ')[0]}, your runner spent ${money(goodsCost)} on your ${service.toLowerCase()}, which is ${money(overage)} more than the ${money(budget)} you set.`)}
+        ${detailTable(`
+          ${detail('Your budget', money(budget))}
+          ${detail('Actually spent', money(goodsCost))}
+          ${detail('Over by', money(overage))}
+          ${reason ? detail('Runner\'s note', esc(reason)) : ''}
+        `)}
+        ${p(`<strong>You have only been charged ${money(budget)} — the amount you agreed.</strong> The extra ${money(overage)} has not been taken. We'll be in touch to sort it out, and you can reply to this email if anything looks wrong.`)}
+        ${btn('View your booking', `${SITE}/customer/dashboard`)}
+      `)
+    });
+
+    sendPushToUser(payer.userId, {
+      title: 'Shopping went over budget',
+      body: `${money(goodsCost)} spent against a ${money(budget)} budget. You've only been charged ${money(budget)}.`,
+      url: CUSTOMER_URL,
+      tag: `booking-${booking.id}`
+    });
+  }
+
+  // The team needs to settle the difference with the runner.
+  send({
+    to: env.contactEmail,
+    subject: `Overage to settle — ${money(overage)} on booking ${booking.id}`,
+    html: layout(`
+      ${h1('A runner is out of pocket')}
+      ${p(`${esc(booking.runner?.user?.name) || 'A runner'} spent ${money(goodsCost)} against a ${money(budget)} budget. The customer has been charged ${money(budget)} only, so ${money(overage)} is unrecovered.`)}
+      ${detailTable(`
+        ${detail('Booking', esc(booking.id))}
+        ${detail('Runner', esc(booking.runner?.user?.name) || '—')}
+        ${detail('Over by', money(overage))}
+        ${reason ? detail('Reason given', esc(reason)) : ''}
+      `)}
+    `)
+  });
+};
+
 // A failed card leaves the booking stranded on Pending payment. Without this the
 // customer believes they've booked, nothing ever happens, and nobody finds out.
 export const notifyPaymentFailed = (booking) => {

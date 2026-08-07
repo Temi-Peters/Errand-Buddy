@@ -258,9 +258,9 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const completeRunnerTask = async (bookingId, runnerId, goodsCost = 0) => {
+  const completeRunnerTask = async (bookingId, runnerId, goodsCost = 0, overageReason = '') => {
     try {
-      const response = await api.completeBooking(bookingId, goodsCost);
+      const response = await api.completeBooking(bookingId, goodsCost, overageReason);
       replaceBooking(response.booking);
       setRunners((current) => current.map((runner) => runner.id === runnerId ? { ...runner, completedTasks: runner.completedTasks + 1 } : runner));
       // The task is genuinely complete, but if the money side failed the runner

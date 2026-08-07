@@ -19,6 +19,8 @@ const blankForm = {
   date: '',
   time: '',
   instructions: '',
+  goodsBudget: '',
+  substitutionPreference: 'ASK_ME_FIRST',
   address: '',
   contactPhone: '',
   postcodeArea: 'Oadby'
@@ -90,7 +92,11 @@ export default function Book() {
 
     api.getTemplate(templateId)
       .then(({ template }) => {
+        // Spread the blank form first: templates predate the budget and
+        // substitution fields, so replacing the object wholesale would leave
+        // them undefined and send an empty preference to the server.
         setForm({
+          ...blankForm,
           serviceType: template.serviceType,
           bookingType: template.bookingType.includes('Weekly') ? 'Weekly subscription' : 'One-off task',
           subscription: template.subscription || '1 task/week',
@@ -152,6 +158,8 @@ export default function Book() {
       time: form.time,
       price: Number(form.price),
       instructions: form.instructions,
+      goodsBudget: form.goodsBudget === '' ? undefined : Number(form.goodsBudget),
+      substitutionPreference: form.substitutionPreference,
       address: form.address,
       contactPhone: form.contactPhone,
       postcodeArea: form.postcodeArea,
@@ -211,7 +219,76 @@ export default function Book() {
         </Card>
       )}
 
-      {step === 3 && <Card className="space-y-4"><h2 className="text-xl font-bold">Schedule and details</h2><input className="focus-ring min-h-11 w-full rounded-lg border border-surface-hi px-3" type="date" value={form.date} onChange={(e) => update('date', e.target.value)} /><input className="focus-ring min-h-11 w-full rounded-lg border border-surface-hi px-3" type="time" value={form.time} onChange={(e) => update('time', e.target.value)} /><textarea className="focus-ring min-h-32 w-full rounded-lg border border-surface-hi p-3" placeholder="Task details" value={form.instructions} onChange={(e) => update('instructions', e.target.value)} /></Card>}
+      {step === 3 && (
+        <Card className="space-y-5">
+          <h2 className="text-xl font-bold">Schedule and details</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-sm font-bold text-muted">Date</span>
+              <input className="focus-ring mt-1 min-h-11 w-full rounded-lg border border-surface-hi px-3" type="date" value={form.date} onChange={(e) => update('date', e.target.value)} />
+            </label>
+            <label className="block">
+              <span className="text-sm font-bold text-muted">Time</span>
+              <input className="focus-ring mt-1 min-h-11 w-full rounded-lg border border-surface-hi px-3" type="time" value={form.time} onChange={(e) => update('time', e.target.value)} />
+            </label>
+          </div>
+
+          <label className="block">
+            <span className="text-sm font-bold text-muted">What do you need?</span>
+            <textarea
+              className="focus-ring mt-1 min-h-32 w-full rounded-lg border border-surface-hi p-3"
+              placeholder={'List everything you need, one per line. For example:\n2 pints semi-skimmed milk\nHovis wholemeal loaf\n6 free-range eggs'}
+              value={form.instructions}
+              onChange={(e) => update('instructions', e.target.value)}
+            />
+          </label>
+
+          {/* Spend cap. The runner cannot charge past this without recording a
+              reason, and anything above it is held for approval rather than taken. */}
+          <label className="block">
+            <span className="text-sm font-bold text-muted">Roughly what should the shopping cost?</span>
+            <p className="mt-1 text-sm text-muted">
+              Your spending limit — separate from the service fee. <strong className="text-ink">You'll never be charged more than this
+              without being asked first.</strong> Leave blank if there's nothing to buy.
+            </p>
+            <div className="mt-2 flex items-center gap-2">
+              <span className="text-lg font-bold text-muted">£</span>
+              <input
+                className="focus-ring min-h-11 w-32 rounded-lg border border-surface-hi px-3"
+                type="number" min="0" max="1000" step="1" placeholder="40"
+                value={form.goodsBudget}
+                onChange={(e) => update('goodsBudget', e.target.value)}
+              />
+            </div>
+          </label>
+
+          <fieldset>
+            <legend className="text-sm font-bold text-muted">If something's out of stock</legend>
+            <div className="mt-2 grid gap-2">
+              {[
+                { value: 'ASK_ME_FIRST', label: 'Ask me first', hint: 'Your runner will call before buying anything different' },
+                { value: 'SUBSTITUTE_FREELY', label: 'Pick something similar', hint: 'Trust your runner to choose a sensible alternative' },
+                { value: 'NO_SUBSTITUTES', label: 'Just skip it', hint: 'Leave it off rather than swapping it' }
+              ].map((option) => (
+                <label
+                  key={option.value}
+                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${form.substitutionPreference === option.value ? 'border-stone-900 bg-stone-50 dark:border-zinc-400 dark:bg-zinc-900' : 'border-surface-hi'}`}
+                >
+                  <input
+                    type="radio" name="substitutionPreference" className="mt-1"
+                    checked={form.substitutionPreference === option.value}
+                    onChange={() => update('substitutionPreference', option.value)}
+                  />
+                  <span>
+                    <span className="block font-semibold text-ink">{option.label}</span>
+                    <span className="block text-sm text-muted">{option.hint}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        </Card>
+      )}
 
       {step === 4 && <Card className="space-y-4"><h2 className="text-xl font-bold">Location and contact</h2><input className="focus-ring min-h-11 w-full rounded-lg border border-surface-hi px-3" placeholder="Address" value={form.address} onChange={(e) => update('address', e.target.value)} /><input className="focus-ring min-h-11 w-full rounded-lg border border-surface-hi px-3" placeholder="Contact phone" value={form.contactPhone} onChange={(e) => update('contactPhone', e.target.value)} /><select className="focus-ring min-h-11 w-full rounded-lg border border-surface-hi px-3" value={form.postcodeArea} onChange={(e) => update('postcodeArea', e.target.value)}>{areas.map((area) => <option key={area}>{area}</option>)}</select></Card>}
 

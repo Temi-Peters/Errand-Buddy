@@ -109,6 +109,10 @@ export const bookingToClient = (booking, { redactCustomerContact = false } = {})
   contactPhone: redactCustomerContact ? null : booking.contactPhone,
   postcodeArea: booking.postcodeArea,
   goodsCost: booking.goodsCost != null ? Number(booking.goodsCost) : null,
+  goodsBudget: booking.goodsBudget != null ? Number(booking.goodsBudget) : null,
+  substitutionPreference: booking.substitutionPreference || 'ASK_ME_FIRST',
+  overageAmount: booking.overageCoveredAmount != null ? Number(booking.overageCoveredAmount) : null,
+  overageReason: booking.overageReason || null,
   createdByCarerId: booking.createdByCarerId || null,
   createdByCarer: booking.createdByCarer ? {
     id: booking.createdByCarer.id,
