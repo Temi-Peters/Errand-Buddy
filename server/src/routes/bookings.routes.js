@@ -4,6 +4,7 @@ import {
   complete,
   create,
   index,
+  journey,
   resumePayment,
   review,
   start,
@@ -18,6 +19,7 @@ import {
   bookingItemsSchema,
   completeBookingSchema,
   itemStatusSchema,
+  journeySchema,
   createBookingSchema,
   messageSchema,
   reviewSchema,
@@ -33,6 +35,7 @@ bookingsRouter.get('/:id/messages', validate(bookingIdSchema), listMessages);
 bookingsRouter.post('/:id/messages', validate(messageSchema), createMessage);
 bookingsRouter.patch('/:id', validate(updateBookingSchema), update);
 bookingsRouter.post('/:id/accept', validate(bookingIdSchema), accept);
+bookingsRouter.post('/:id/journey', validate(journeySchema), journey);
 bookingsRouter.post('/:id/start', validate(bookingIdSchema), start);
 bookingsRouter.post('/:id/complete', validate(completeBookingSchema), complete);
 bookingsRouter.get('/:id/detail', validate(bookingIdSchema), detail);

@@ -665,6 +665,21 @@ export const notifySubstituteDecided = (booking, { itemName, proposed, approved 
   });
 };
 
+// Progress ping. Push only — an email for every leg of a 40-minute errand would
+// be worse than saying nothing.
+export const notifyJourneyUpdate = (booking, phrase) => {
+  const payer = booking.createdByCarer || booking.customer;
+  if (!payer?.userId) return;
+  const runnerName = esc(booking.runner?.user?.name)?.split(' ')[0] || 'Your runner';
+
+  sendPushToUser(payer.userId, {
+    title: `${runnerName} ${phrase}`,
+    body: `${serviceTypeToClient(booking.serviceType)} · tap for details`,
+    url: CUSTOMER_URL,
+    tag: `journey-${booking.id}`
+  });
+};
+
 // A failed card leaves the booking stranded on Pending payment. Without this the
 // customer believes they've booked, nothing ever happens, and nobody finds out.
 export const notifyPaymentFailed = (booking) => {

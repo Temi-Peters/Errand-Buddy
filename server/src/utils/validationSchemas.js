@@ -151,6 +151,15 @@ export const itemStatusSchema = z.object({
   })
 });
 
+export const journeySchema = z.object({
+  params: idParamSchema,
+  body: z.object({
+    stage: z.enum(['NOT_STARTED', 'ON_THE_WAY_TO_SHOP', 'AT_SHOP', 'HEADING_TO_YOU', 'ARRIVED']),
+    lat: z.coerce.number().min(-90).max(90).optional().nullable(),
+    lng: z.coerce.number().min(-180).max(180).optional().nullable()
+  })
+});
+
 export const messageSchema = z.object({
   params: idParamSchema,
   body: z.object({

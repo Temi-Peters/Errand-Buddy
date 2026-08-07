@@ -117,6 +117,13 @@ export const bookingToClient = (booking, { redactCustomerContact = false } = {})
   substitutionPreference: booking.substitutionPreference || 'ASK_ME_FIRST',
   overageAmount: booking.overageCoveredAmount != null ? Number(booking.overageCoveredAmount) : null,
   overageReason: booking.overageReason || null,
+  journeyStage: booking.journeyStage || 'NOT_STARTED',
+  journeyUpdatedAt: booking.journeyUpdatedAt ? booking.journeyUpdatedAt.toISOString() : null,
+  // Only ever the last point the runner chose to share, and only while the
+  // errand is live — never a trail.
+  lastLocation: (booking.lastLat != null && booking.lastLng != null && !redactCustomerContact)
+    ? { lat: booking.lastLat, lng: booking.lastLng, at: booking.lastLocationAt?.toISOString() || null }
+    : null,
   // Counts only — the actual items and photos are fetched per booking via
   // /bookings/:id/detail so the 45s poll never carries image payloads.
   itemCount: booking._count?.items ?? (booking.items ? booking.items.length : null),

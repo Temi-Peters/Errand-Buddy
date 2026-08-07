@@ -9,6 +9,7 @@ import BookingCard from '../components/BookingCard';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import SubstitutionRequests from '../components/SubstitutionRequests';
+import JourneyProgress from '../components/JourneyProgress';
 import { GuideModal, HelpButton, hasSeenGuide } from '../components/GuideCards';
 import { customerGuide } from '../data/guides';
 import { BarChartHorizontal, DonutChart } from '../components/Charts';
@@ -362,6 +363,15 @@ export default function CustomerDashboard() {
           ))}
         </div>
       </div>
+
+      {/* Where the errand is up to, above the tabs — the question people
+          otherwise ring up to ask. */}
+      {mine.filter((b) => ['Assigned', 'In Progress'].includes(b.status) && b.journeyStage !== 'NOT_STARTED').map((b) => (
+        <Card key={`journey-${b.id}`} className="mb-4">
+          <p className="font-bold text-ink">{b.serviceType} · {b.date}</p>
+          <div className="mt-3"><JourneyProgress booking={b} compact /></div>
+        </Card>
+      ))}
 
       {/* Shown above the tabs, on every tab: a runner is standing in a shop
           waiting for this answer, so it must not be buried behind navigation. */}

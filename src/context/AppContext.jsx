@@ -247,6 +247,30 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // One-shot position, only if the runner allows it and only when they tap.
+  // Never a watch: a browser stops reporting location once the phone locks, so a
+  // continuous feed would silently stall rather than track.
+  const updateJourney = async (bookingId, stage, { shareLocation = false } = {}) => {
+    let point = {};
+    if (shareLocation && navigator.geolocation) {
+      point = await new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          () => resolve({}), // declined or unavailable — send the stage anyway
+          { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+        );
+      });
+    }
+    try {
+      const response = await api.updateJourney(bookingId, { stage, ...point });
+      replaceBooking(response.booking);
+      return response.booking;
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  };
+
   const acceptBooking = async (bookingId) => {
     try {
       const response = await api.acceptBooking(bookingId);
@@ -551,6 +575,7 @@ export const AppProvider = ({ children }) => {
     addBooking,
     updateBooking,
     acceptBooking,
+    updateJourney,
     completeRunnerTask,
     fetchMessages,
     sendMessage,

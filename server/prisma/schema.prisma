@@ -71,6 +71,17 @@ enum PhotoKind {
   SUBSTITUTE
 }
 
+// Where the runner is up to. Deliberately NOT extra BookingStatus values: the
+// status machine gates payments, payouts and permissions, and a progress label
+// has no business in it. This is display only.
+enum JourneyStage {
+  NOT_STARTED
+  ON_THE_WAY_TO_SHOP
+  AT_SHOP
+  HEADING_TO_YOU
+  ARRIVED
+}
+
 enum SubstitutionPreference {
   ASK_ME_FIRST
   SUBSTITUTE_FREELY
@@ -252,6 +263,17 @@ model Booking {
   // there is no way to ask how long a booking waited for a runner or how long the
   // errand took — the two numbers that say whether the model actually works.
   // Only populated from the point these were added; older rows stay null.
+  // Progress the customer can see, updated by the runner tapping a button.
+  // Continuous GPS is not possible in a web app — a browser stops reporting
+  // location the moment the phone locks — so this is explicit check-ins plus an
+  // optional one-off position, not a stream.
+  journeyStage         JourneyStage     @default(NOT_STARTED)
+  journeyUpdatedAt     DateTime?
+  // A single point, shared only when the runner chooses to. Wiped on completion
+  // so nobody's movements are retained beyond the errand.
+  lastLat              Float?
+  lastLng              Float?
+  lastLocationAt       DateTime?
   assignedAt           DateTime?
   startedAt            DateTime?
   completedAt          DateTime?

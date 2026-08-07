@@ -17,6 +17,7 @@ import {
   notifyBookingCreated,
   notifyCompletionProblem,
   notifyGoodsOverage,
+  notifyJourneyUpdate,
   notifyGoodsCharged,
   notifyReviewSubmitted,
   notifyTaskCompleted,
@@ -332,6 +333,51 @@ export const acceptBooking = async (user, id) => {
   return bookingToClient(updated);
 };
 
+// Explicit check-ins from the runner. One row-write per tap — no polling loop,
+// no socket, nothing running in the background. That matters on a free tier, but
+// it's also the only thing that actually works: a browser stops reporting
+// location the moment the phone locks, so a "live" dot would simply freeze.
+const STAGE_MESSAGE = {
+  ON_THE_WAY_TO_SHOP: 'is on the way to the shop',
+  AT_SHOP: 'has arrived at the shop',
+  HEADING_TO_YOU: 'is on the way to you',
+  ARRIVED: 'has arrived'
+};
+
+export const updateJourney = async (user, id, { stage, lat, lng }) => {
+  if (user.role !== 'RUNNER' || !user.runnerProfile) {
+    throw new ApiError(403, 'Only runners can update progress');
+  }
+
+  const booking = await prisma.booking.findUnique({ where: { id } });
+  if (!booking) throw new ApiError(404, 'Booking not found');
+  if (booking.runnerId !== user.runnerProfile.id) throw new ApiError(403, 'Booking is not assigned to you');
+  if (!['ASSIGNED', 'IN_PROGRESS'].includes(booking.status)) {
+    throw new ApiError(409, 'Progress can only be updated on a live errand');
+  }
+
+  // Sharing a position is optional and per-tap. Reject nonsense rather than
+  // storing it — a bad coordinate would put the marker in the sea.
+  const hasPoint = lat != null && lng != null;
+  if (hasPoint && (Math.abs(Number(lat)) > 90 || Math.abs(Number(lng)) > 180)) {
+    throw new ApiError(400, 'That location does not look right');
+  }
+
+  const updated = await prisma.booking.update({
+    where: { id },
+    data: {
+      journeyStage: stage,
+      journeyUpdatedAt: new Date(),
+      ...(hasPoint ? { lastLat: Number(lat), lastLng: Number(lng), lastLocationAt: new Date() } : {})
+    },
+    include: bookingInclude
+  });
+
+  if (STAGE_MESSAGE[stage]) notifyJourneyUpdate(updated, STAGE_MESSAGE[stage]);
+
+  return bookingToClient(updated);
+};
+
 export const startBooking = async (user, id) => transitionRunnerBooking(user, id, 'ASSIGNED', 'IN_PROGRESS');
 
 export const completeBooking = async (user, id, goodsCostInput = 0, overageReason = '') => {
@@ -507,7 +553,11 @@ const transitionRunnerBooking = async (user, id, requiredStatus, nextStatus) => 
     data: {
       status: nextStatus,
       ...(nextStatus === 'IN_PROGRESS' ? { startedAt: new Date() } : {}),
-      ...(nextStatus === 'COMPLETED' ? { completedAt: new Date() } : {})
+      // Errand over — drop the shared position. There is no reason to keep a
+      // record of where someone was once the job is done.
+      ...(nextStatus === 'COMPLETED'
+        ? { completedAt: new Date(), lastLat: null, lastLng: null, lastLocationAt: null, journeyStage: 'ARRIVED' }
+        : {})
     },
     include: bookingInclude
   });
