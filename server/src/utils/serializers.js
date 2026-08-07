@@ -82,7 +82,11 @@ export const runnerToClient = (runner) => ({
   suspendedAt: runner.suspendedAt,
   stripeAccountId: runner.stripeAccountId,
   avatarUrl: runner.avatarUrl || null,
-  verified: Boolean(runner.idVerifiedAt)
+  verified: Boolean(runner.idVerifiedAt),
+  // reviewCount drives the "New runner" badge. Showing a fabricated number — 5
+  // flatters, 2.5 punishes — is worse than saying there is no data yet, because a
+  // low starting score suppresses the very bookings that would earn real reviews.
+  reviewCount: runner._count?.reviews ?? null
 });
 
 // redactCustomerContact hides the doorstep — full address, contact phone and the
@@ -113,6 +117,10 @@ export const bookingToClient = (booking, { redactCustomerContact = false } = {})
   substitutionPreference: booking.substitutionPreference || 'ASK_ME_FIRST',
   overageAmount: booking.overageCoveredAmount != null ? Number(booking.overageCoveredAmount) : null,
   overageReason: booking.overageReason || null,
+  // Counts only — the actual items and photos are fetched per booking via
+  // /bookings/:id/detail so the 45s poll never carries image payloads.
+  itemCount: booking._count?.items ?? (booking.items ? booking.items.length : null),
+  photoCount: booking._count?.photos ?? (booking.photos ? booking.photos.length : null),
   createdByCarerId: booking.createdByCarerId || null,
   createdByCarer: booking.createdByCarer ? {
     id: booking.createdByCarer.id,

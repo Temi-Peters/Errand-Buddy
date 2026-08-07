@@ -26,10 +26,11 @@ import { assertActiveCarerLink } from './carers.service.js';
 
 const bookingInclude = {
   customer: { include: { user: true } },
-  runner: { include: { user: true } },
+  runner: { include: { user: true, _count: { select: { reviews: true } } } },
   createdByCarer: { include: { user: true } },
   review: true,
-  payment: true
+  payment: true,
+  _count: { select: { items: true, photos: true } }
 };
 
 const platformFee = (price) => Math.round(Number(price) * 0.1 * 100) / 100;
@@ -569,7 +570,25 @@ export const reviewBooking = async (user, id, data) => {
     }
   });
 
-  notifyReviewSubmitted(savedReview);
+  // RunnerProfile.rating was set to 0 at signup and never written again, so every
+  // runner showed a permanent 0 while the dashboard computed a different average
+  // from bookings. Recompute from the source of truth on every review.
+  const stats = await prisma.review.aggregate({
+    where: { runnerId: booking.runnerId },
+    _avg: { stars: true },
+    _count: { stars: true }
+  });
+  const runnerProfile = await prisma.runnerProfile.update({
+    where: { id: booking.runnerId },
+    data: { rating: Math.round((stats._avg.stars || 0) * 10) / 10 }
+  });
+
+  notifyReviewSubmitted(savedReview, {
+    // The push needs the runner's USER id; Review only carries the profile id.
+    runnerUserId: runnerProfile.userId,
+    stars: Number(data.stars),
+    reviewCount: stats._count.stars
+  });
 
   const updated = await prisma.booking.findUnique({ where: { id }, include: bookingInclude });
   return bookingToClient(updated);

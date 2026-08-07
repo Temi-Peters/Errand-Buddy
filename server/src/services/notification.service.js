@@ -465,8 +465,19 @@ export const notifyNewMessage = (message) => {
   });
 };
 
-export const notifyReviewSubmitted = () => {
-  // Internal event — no external notification needed
+// Runners could never tell they'd been reviewed, and the dashboard showed only a
+// number with no way to see what was said.
+export const notifyReviewSubmitted = (review, { runnerUserId, stars, reviewCount } = {}) => {
+  if (!runnerUserId) return;
+  const stars5 = Math.max(0, Math.min(5, Number(stars) || 0));
+  sendPushToUser(runnerUserId, {
+    title: `New ${stars5}-star review`,
+    body: reviewCount === 1
+      ? 'Your first review is in — take a look.'
+      : `That's ${reviewCount} reviews now.`,
+    url: RUNNER_URL,
+    tag: `review-${review?.id || runnerUserId}`
+  });
 };
 
 // Completion succeeded but the money side didn't. Goes to the team, because this

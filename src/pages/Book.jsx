@@ -6,6 +6,8 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import CheckoutForm from '../components/CheckoutForm';
 import ServiceCard from '../components/ServiceCard';
+import ShoppingList from '../components/ShoppingList';
+import PhotoUpload from '../components/PhotoUpload';
 import StatusBadge from '../components/StatusBadge';
 import { useApp } from '../context/AppContext';
 import { areas, bookableServiceTypes } from '../data/options';
@@ -19,6 +21,8 @@ const blankForm = {
   date: '',
   time: '',
   instructions: '',
+  items: [],
+  pendingPhotos: [],
   goodsBudget: '',
   substitutionPreference: 'ASK_ME_FIRST',
   address: '',
@@ -165,7 +169,19 @@ export default function Book() {
       postcodeArea: form.postcodeArea,
       ...(onBehalfOf ? { onBehalfOf } : {})
     })
-      .then(({ booking, clientSecret: secret }) => {
+      .then(async ({ booking, clientSecret: secret }) => {
+        // Items and photos attach to a booking that now exists, so they're saved
+        // straight after creation. Best-effort: a failure here must not block
+        // payment for an errand the customer has already described in the notes.
+        try {
+          const realItems = form.items.filter((item) => item.name.trim());
+          if (realItems.length) await api.saveBookingItems(booking.id, realItems);
+          for (const photo of form.pendingPhotos) {
+            await api.addBookingPhoto(booking.id, { kind: 'REQUEST', dataUrl: photo.dataUrl });
+          }
+        } catch {
+          showToast('Your booking is saved, but a photo or list item did not attach.', 'error');
+        }
         setConfirmed(booking);
         setClientSecret(secret);
       })
@@ -261,6 +277,17 @@ export default function Book() {
               />
             </div>
           </label>
+
+          <ShoppingList items={form.items} onChange={(items) => update('items', items)} />
+
+          <PhotoUpload
+            kind="REQUEST"
+            label="Photos of what you need (optional)"
+            hint="A picture of the exact product saves any guesswork — especially for a specific brand or size."
+            photos={form.pendingPhotos}
+            onAdd={({ dataUrl }) => update('pendingPhotos', [...form.pendingPhotos, { id: `tmp-${form.pendingPhotos.length}-${dataUrl.length}`, kind: 'REQUEST', dataUrl }])}
+            onRemove={(id) => update('pendingPhotos', form.pendingPhotos.filter((p) => p.id !== id))}
+          />
 
           <fieldset>
             <legend className="text-sm font-bold text-muted">If something's out of stock</legend>

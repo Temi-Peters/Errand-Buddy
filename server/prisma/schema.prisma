@@ -51,6 +51,22 @@ enum CarerLinkStatus {
 // What the runner should do when an item isn't on the shelf. Defaults to
 // ASK_ME_FIRST because guessing on someone else's shopping is the single biggest
 // source of disputes in a human-shopped grocery errand.
+// What a runner did with each item on the list. Recorded per item so "they
+// didn't have it" stops being a free-text conversation and becomes evidence.
+enum ItemStatus {
+  PENDING
+  BOUGHT
+  SUBSTITUTED
+  UNAVAILABLE
+}
+
+// REQUEST photos are the customer showing which product they mean; RECEIPT is the
+// runner's proof of what was actually spent.
+enum PhotoKind {
+  REQUEST
+  RECEIPT
+}
+
 enum SubstitutionPreference {
   ASK_ME_FIRST
   SUBSTITUTE_FREELY
@@ -224,6 +240,8 @@ model Booking {
   postcodeArea     String
   review               Review?
   payment              Payment?
+  items                BookingItem[]
+  photos               BookingPhoto[]
   messages             Message[]
   claims               Claim[]
   // Lifecycle stamps. updatedAt only ever shows the LAST change, so without these
@@ -254,6 +272,45 @@ model Booking {
   @@index([status])
   @@index([createdByCarerId])
   @@index([createdAt])
+}
+
+// One line of the shopping list. Optional — a booking can still be a single
+// free-text instruction — but structured items are what let a runner mark
+// something unavailable and let a customer name a backup in advance.
+model BookingItem {
+  id             String     @id @default(cuid())
+  bookingId      String
+  booking        Booking    @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  position       Int        @default(0)
+  name           String
+  quantity       String     @default("")
+  // "if no Hovis, get Warburtons" — the cheapest substitution intelligence there
+  // is, and it removes a phone call while the runner stands in the aisle.
+  backupName     String?
+  status         ItemStatus @default(PENDING)
+  substitutedWith String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([bookingId])
+}
+
+// Stored as a client-downscaled data URL, following the avatar pattern rather
+// than the RunnerDocument Bytes pattern: these are small, need no separate
+// binary route, and must survive for the life of the booking. Kept in their own
+// table so the bookings list — polled every 45s — never carries image payloads.
+model BookingPhoto {
+  id           String    @id @default(cuid())
+  bookingId    String
+  booking      Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  kind         PhotoKind
+  dataUrl      String
+  caption      String?
+  uploadedById String?
+  createdAt    DateTime  @default(now())
+
+  @@index([bookingId])
+  @@index([bookingId, kind])
 }
 
 model Review {
