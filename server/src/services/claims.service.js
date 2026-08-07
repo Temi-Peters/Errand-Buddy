@@ -2,11 +2,15 @@ import { prisma } from '../config/prisma.js';
 import { ApiError } from '../middleware/errorHandler.js';
 import { claimToClient } from '../utils/serializers.js';
 import { createRefund } from './stripe.service.js';
-import { notifyClaimRaised, notifyClaimResolved } from './notification.service.js';
+import { notifyClaimRaised, notifyClaimRaisedToRunner, notifyClaimReply, notifyClaimResolved } from './notification.service.js';
 
 const claimInclude = {
   customer: { include: { user: true } },
-  booking: { include: { payment: true } }
+  // The runner is party to the claim, so their user record has to be loadable
+  // for notifications and for the thread's authorisation check.
+  runner: { include: { user: true } },
+  booking: { include: { payment: true, createdByCarer: true } },
+  _count: { select: { messages: true } }
 };
 
 // A customer (or the carer who placed the booking) raises a claim on their booking.
@@ -34,15 +38,26 @@ export const createClaim = async (user, bookingId, data) => {
   if (!category || !description) throw new ApiError(400, 'A category and description are required');
 
   const claim = await prisma.claim.create({
-    data: { bookingId, customerId: booking.customerId, category, description },
+    // Bind the claim to the runner it concerns. Without this a runner could be
+    // named, have a refund taken against their work, and never be told.
+    data: { bookingId, customerId: booking.customerId, runnerId: booking.runnerId || null, category, description },
     include: claimInclude
   });
 
   notifyClaimRaised(claim);
-  return claimToClient(claim);
+  // The person the claim is about finds out at the same time as the team, not
+  // after a decision has already been made.
+  const withRunner = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: { runner: { include: { user: true } } }
+  });
+  notifyClaimRaisedToRunner(claim, withRunner);
+  return claimToClient(claim, user);
 };
 
 // Admin sees all claims; a customer sees claims on their own (or carer-placed) bookings.
+// Previously returned [] for every runner, so someone could be named in a claim,
+// have money taken off their pay, and never know it happened.
 export const listClaims = async (user) => {
   let where;
   if (user.role === 'ADMIN') {
@@ -54,12 +69,82 @@ export const listClaims = async (user) => {
         { booking: { createdByCarerId: user.customerProfile.id } }
       ]
     };
+  } else if (user.role === 'RUNNER' && user.runnerProfile) {
+    // A runner sees claims naming them — nothing else.
+    where = { runnerId: user.runnerProfile.id };
   } else {
     return [];
   }
 
   const claims = await prisma.claim.findMany({ where, include: claimInclude, orderBy: { createdAt: 'desc' } });
-  return claims.map(claimToClient);
+  return claims.map((claim) => claimToClient(claim, user));
+};
+
+// Anyone party to the claim: the customer who raised it, the carer who placed
+// the booking, the runner it names, or an admin.
+const loadClaimFor = async (user, claimId) => {
+  const claim = await prisma.claim.findUnique({
+    where: { id: claimId },
+    include: { ...claimInclude, messages: { include: { sender: true }, orderBy: { createdAt: 'asc' } } }
+  });
+  if (!claim) throw new ApiError(404, 'Claim not found');
+
+  const isCustomer = user.customerProfile
+    && (claim.customerId === user.customerProfile.id || claim.booking?.createdByCarerId === user.customerProfile.id);
+  const isRunner = user.runnerProfile && claim.runnerId === user.runnerProfile.id;
+  if (user.role !== 'ADMIN' && !isCustomer && !isRunner) {
+    throw new ApiError(403, 'You are not party to this claim');
+  }
+  return { claim, isRunner };
+};
+
+export const getClaimThread = async (user, claimId) => {
+  const { claim } = await loadClaimFor(user, claimId);
+  return {
+    claim: claimToClient(claim, user),
+    messages: claim.messages.map((m) => ({
+      id: m.id,
+      body: m.body,
+      senderId: m.senderId,
+      senderName: m.sender?.name || 'Unknown',
+      senderRole: m.sender?.role?.toLowerCase() || 'user',
+      createdAt: m.createdAt.toISOString()
+    }))
+  };
+};
+
+export const postClaimMessage = async (user, claimId, body) => {
+  const { claim, isRunner } = await loadClaimFor(user, claimId);
+  const text = String(body || '').trim();
+  if (!text) throw new ApiError(400, 'Write a message first');
+  if (claim.status !== 'OPEN') throw new ApiError(409, 'This issue has already been settled');
+
+  const message = await prisma.claimMessage.create({
+    data: { claimId, senderId: user.id, body: text.slice(0, 2000) },
+    include: { sender: true }
+  });
+
+  // Stamped so an admin can see at a glance whether the runner has had their say
+  // before any money moves.
+  if (isRunner && !claim.runnerRepliedAt) {
+    await prisma.claim.update({ where: { id: claimId }, data: { runnerRepliedAt: new Date() } });
+  }
+
+  // Tell the other side, whoever that is.
+  const recipients = [
+    claim.customer?.userId,
+    claim.runner?.userId
+  ].filter((id) => id && id !== user.id);
+  recipients.forEach((id) => notifyClaimReply(claim, id, user.name));
+
+  return {
+    id: message.id,
+    body: message.body,
+    senderId: message.senderId,
+    senderName: message.sender?.name,
+    senderRole: message.sender?.role?.toLowerCase(),
+    createdAt: message.createdAt.toISOString()
+  };
 };
 
 // Admin resolves a claim: reject, or resolve with an optional Stripe refund.

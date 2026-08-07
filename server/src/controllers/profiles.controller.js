@@ -142,7 +142,7 @@ export const updateCustomer = async (req, res, next) => {
     const profile = await prisma.customerProfile.findUnique({ where: { id }, include: { user: true } });
     if (!profile) throw new ApiError(404, 'Customer not found');
 
-    const { name, email, phone, address, postcodeArea, avatarUrl } = req.body;
+    const { name, email, phone, address, postcodeArea, avatarUrl, standingNotes } = req.body;
 
     // Update user-level fields (name, email) if provided
     if (name || email) {
@@ -162,6 +162,7 @@ export const updateCustomer = async (req, res, next) => {
     if (address !== undefined) profileUpdates.address = address.trim();
     if (postcodeArea !== undefined) profileUpdates.postcodeArea = postcodeArea.trim();
     if (avatarUrl !== undefined) profileUpdates.avatarUrl = avatarUrl || null;
+    if (standingNotes !== undefined) profileUpdates.standingNotes = String(standingNotes || '').trim().slice(0, 1000) || null;
 
     const updated = await prisma.customerProfile.update({
       where: { id },

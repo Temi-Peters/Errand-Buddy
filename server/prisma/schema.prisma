@@ -121,6 +121,7 @@ model User {
   receivedMessages Message[]       @relation("ReceivedMessages")
   pushSubscriptions PushSubscription[]
   passwordResetTokens PasswordResetToken[]
+  claimMessages   ClaimMessage[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 }
@@ -160,6 +161,10 @@ model CustomerProfile {
   phone              String
   postcodeArea       String
   avatarUrl          String?
+  // Things that are true every time — "ring twice, I'm slow to the door",
+  // "key safe 1234", "hard of hearing". Previously retyped into the booking
+  // instructions on every single order, or forgotten.
+  standingNotes      String?
   walletBalance      Decimal              @default(0) @db.Decimal(10, 2)
   bookings           Booking[]
   reviews            Review[]
@@ -210,6 +215,7 @@ model RunnerProfile {
   bookings        Booking[]
   reviews         Review[]
   documents       RunnerDocument[]
+  claims          Claim[]
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 }
@@ -267,6 +273,12 @@ model Booking {
   // Continuous GPS is not possible in a web app — a browser stops reporting
   // location the moment the phone locks — so this is explicit check-ins plus an
   // optional one-off position, not a stream.
+  // When the job became available to runners. The area restriction relaxes a
+  // minute after this, so a job nobody local takes doesn't sit dead — see
+  // isRunnerEligible in bookings.service.js.
+  openedAt             DateTime?
+  cancellationReason   String?
+  rescheduledAt        DateTime?
   journeyStage         JourneyStage     @default(NOT_STARTED)
   journeyUpdatedAt     DateTime?
   // A single point, shared only when the runner chooses to. Wiped on completion
@@ -472,6 +484,12 @@ model Claim {
   booking        Booking         @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   customerId     String
   customer       CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  // The runner named by the claim. Previously a claim could trigger a real
+  // refund without the runner ever being told, let alone able to reply.
+  runnerId       String?
+  runner         RunnerProfile?  @relation(fields: [runnerId], references: [id], onDelete: SetNull)
+  messages       ClaimMessage[]
+  runnerRepliedAt DateTime?
   category       String
   description    String
   status         ClaimStatus     @default(OPEN)
@@ -484,4 +502,19 @@ model Claim {
   @@index([customerId])
   @@index([bookingId])
   @@index([status])
+  @@index([runnerId])
+}
+
+// A claim is a conversation, not a verdict handed down. Customer, named runner
+// and admin all post here, so a refund decision has both sides on the record.
+model ClaimMessage {
+  id        String   @id @default(cuid())
+  claimId   String
+  claim     Claim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([claimId])
 }

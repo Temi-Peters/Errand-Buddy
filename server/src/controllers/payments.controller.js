@@ -10,6 +10,7 @@ import {
 } from '../services/stripe.service.js';
 import { creditWallet } from '../services/wallet.service.js';
 import { notifyPaymentFailed } from '../services/notification.service.js';
+import { openToRunners } from '../services/bookings.service.js';
 
 // ─── POST /api/payments/webhook ───────────────────────────────────────────────
 // Raw body is required — registered before express.json() in app.js
@@ -90,6 +91,15 @@ const handlePaymentSucceeded = async (paymentIntent) => {
       data: { status: 'PENDING' }
     })
   ]);
+
+  // Payment cleared, so the job is now real work someone can take. Stamp the
+  // clock the area-widening rule reads, and push it to local runners — they
+  // previously had to find work by refreshing a list and hoping.
+  //
+  // Outside the transaction on purpose: a push failure must not roll back a
+  // confirmed payment.
+  await openToRunners(payment.bookingId).catch((err) =>
+    console.error(`[dispatch] Could not open booking ${payment.bookingId} to runners:`, err.message));
 
   console.log(`[webhook] Booking ${payment.bookingId} confirmed after payment ${paymentIntent.id}`);
 };
