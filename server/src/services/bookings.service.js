@@ -16,6 +16,7 @@ import {
   notifyBookingCancelled,
   notifyBookingCreated,
   notifyCompletionProblem,
+  notifyGoodsOverage,
   notifyGoodsCharged,
   notifyReviewSubmitted,
   notifyTaskCompleted,
@@ -185,6 +186,8 @@ export const createBooking = async (user, data) => {
       time: data.time,
       price,
       discountAmount: discount > 0 ? discount : null,
+      goodsBudget: data.goodsBudget == null || data.goodsBudget === '' ? null : Number(data.goodsBudget),
+      substitutionPreference: data.substitutionPreference || 'ASK_ME_FIRST',
       status: 'PENDING_PAYMENT',
       instructions: data.instructions,
       address: data.address,
@@ -330,10 +333,21 @@ export const acceptBooking = async (user, id) => {
 
 export const startBooking = async (user, id) => transitionRunnerBooking(user, id, 'ASSIGNED', 'IN_PROGRESS');
 
-export const completeBooking = async (user, id, goodsCostInput = 0) => {
+export const completeBooking = async (user, id, goodsCostInput = 0, overageReason = '') => {
   const goodsCost = Number(goodsCostInput) || 0;
   if (goodsCost < 0) throw new ApiError(400, 'Cost of goods cannot be negative');
   if (goodsCost > 1000) throw new ApiError(400, 'Cost of goods looks too high — please double-check');
+
+  // Going over the agreed budget needs an explanation, so the customer sees why
+  // rather than just a bigger number. Checked before the status transition so a
+  // missing reason doesn't leave the booking already marked complete.
+  if (goodsCost > 0) {
+    const pre = await prisma.booking.findUnique({ where: { id }, select: { goodsBudget: true } });
+    const budget = pre?.goodsBudget == null ? null : Number(pre.goodsBudget);
+    if (budget != null && goodsCost > budget && !String(overageReason || '').trim()) {
+      throw new ApiError(400, `That's £${(goodsCost - budget).toFixed(2)} over the customer's £${budget.toFixed(2)} budget. Please add a short note explaining why.`);
+    }
+  }
 
   const updated = await transitionRunnerBooking(user, id, 'IN_PROGRESS', 'COMPLETED');
 
@@ -350,16 +364,40 @@ export const completeBooking = async (user, id, goodsCostInput = 0) => {
   // Charge the payer for the cost of goods. The payer is the carer when the booking
   // was placed on a client's behalf, otherwise the customer themselves.
   let chargeResult = null;
+  let overage = 0;
   if (goodsCost > 0) {
     try {
       const booking = await prisma.booking.findUnique({ where: { id } });
       if (booking && !booking.goodsChargedAt) {
         const payerId = booking.createdByCarerId || booking.customerId;
-        chargeResult = await chargeForGoods(payerId, goodsCost, id, `Cost of goods — ${serviceTypeToClient(booking.serviceType)}`);
+
+        // THE GUARANTEE: a customer is never charged more than the budget they
+        // agreed. Anything above it is recorded as an overage and left for them
+        // to approve — it is not taken silently. Without a budget set there is
+        // nothing to protect against, so the full amount stands.
+        const budget = booking.goodsBudget == null ? null : Number(booking.goodsBudget);
+        overage = budget == null ? 0 : Math.max(0, Math.round((goodsCost - budget) * 100) / 100);
+        const chargeable = overage > 0 ? budget : goodsCost;
+
+        if (chargeable > 0) {
+          chargeResult = await chargeForGoods(payerId, chargeable, id, `Cost of goods — ${serviceTypeToClient(booking.serviceType)}`);
+        }
+
         await prisma.booking.update({
           where: { id },
-          data: { goodsCost, goodsChargedAt: new Date() }
+          data: {
+            goodsCost,
+            goodsChargedAt: new Date(),
+            ...(overage > 0 ? { overageCoveredAmount: overage, overageReason: overageReason || null } : {})
+          }
         });
+
+        if (overage > 0) {
+          // The runner is out of pocket for the excess until this is settled, so
+          // both sides need telling — not just a row in the database.
+          const fresh = await prisma.booking.findUnique({ where: { id }, include: bookingInclude });
+          notifyGoodsOverage(fresh, { overage, budget, goodsCost, reason: overageReason });
+        }
       }
     } catch (err) {
       // Don't fail the completion — the runner has already done the work — but

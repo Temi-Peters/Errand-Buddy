@@ -14,6 +14,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import {
   bookingIdSchema,
+  completeBookingSchema,
   createBookingSchema,
   messageSchema,
   reviewSchema,
@@ -30,6 +31,6 @@ bookingsRouter.post('/:id/messages', validate(messageSchema), createMessage);
 bookingsRouter.patch('/:id', validate(updateBookingSchema), update);
 bookingsRouter.post('/:id/accept', validate(bookingIdSchema), accept);
 bookingsRouter.post('/:id/start', validate(bookingIdSchema), start);
-bookingsRouter.post('/:id/complete', validate(bookingIdSchema), complete);
+bookingsRouter.post('/:id/complete', validate(completeBookingSchema), complete);
 bookingsRouter.post('/:id/review', validate(reviewSchema), review);
 bookingsRouter.post('/:id/resume-payment', validate(bookingIdSchema), resumePayment);

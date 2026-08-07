@@ -98,7 +98,14 @@ export const createBookingSchema = z.object({
     address: z.string().trim().min(1, 'Address is required'),
     contactPhone: z.string().trim().min(1, 'Contact phone is required'),
     postcodeArea: z.string().trim().min(1, 'Postcode area is required'),
-    onBehalfOf: z.string().trim().optional().nullable()
+    onBehalfOf: z.string().trim().optional().nullable(),
+    // What the customer agrees to spend on the shopping itself. Optional — some
+    // errands (a prescription already paid for) have no goods cost at all.
+    goodsBudget: z.preprocess(
+      (v) => (v === '' || v == null ? undefined : v),
+      z.coerce.number().min(0, 'Budget cannot be negative').max(1000, 'Budget looks too high').optional()
+    ),
+    substitutionPreference: z.enum(['ASK_ME_FIRST', 'SUBSTITUTE_FREELY', 'NO_SUBSTITUTES']).optional()
   })
 });
 
@@ -112,6 +119,14 @@ export const updateBookingSchema = z.object({
 
 export const bookingIdSchema = z.object({
   params: idParamSchema
+});
+
+export const completeBookingSchema = z.object({
+  params: idParamSchema,
+  body: z.object({
+    goodsCost: z.coerce.number().min(0).max(1000).optional(),
+    overageReason: z.string().trim().max(500, 'Note must be 500 characters or fewer').optional()
+  })
 });
 
 export const messageSchema = z.object({

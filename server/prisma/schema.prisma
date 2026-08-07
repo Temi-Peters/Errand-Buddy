@@ -48,6 +48,15 @@ enum CarerLinkStatus {
   ACTIVE
 }
 
+// What the runner should do when an item isn't on the shelf. Defaults to
+// ASK_ME_FIRST because guessing on someone else's shopping is the single biggest
+// source of disputes in a human-shopped grocery errand.
+enum SubstitutionPreference {
+  ASK_ME_FIRST
+  SUBSTITUTE_FREELY
+  NO_SUBSTITUTES
+}
+
 enum ServiceType {
   DOG_WALKING
   GROCERY_SHOPPING
@@ -228,6 +237,13 @@ model Booking {
   overageCoveredAmount Decimal?         @db.Decimal(10, 2)
   overageCoveredAt     DateTime?
   onHoldUntil          DateTime?
+  // What the customer agreed to spend on the shopping itself, set when booking.
+  // The runner cannot charge past it without recording a reason, and anything
+  // above it is held as an overage for the customer to approve rather than
+  // silently taken — "you never pay more than you agreed".
+  goodsBudget            Decimal?               @db.Decimal(10, 2)
+  substitutionPreference SubstitutionPreference @default(ASK_ME_FIRST)
+  overageReason          String?
   goodsCost            Decimal?         @db.Decimal(10, 2)
   goodsChargedAt       DateTime?
   createdAt            DateTime         @default(now())

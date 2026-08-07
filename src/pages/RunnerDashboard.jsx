@@ -32,6 +32,32 @@ const mapsUrl = (address) => `https://www.google.com/maps/search/?api=1&query=${
 // bookings back newest-first, which put today's job at the bottom of the list.
 const bySoonest = (a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`);
 
+// What to do when something isn't on the shelf. Shown wherever a runner might be
+// about to make that decision — the alternative is guessing on someone else's
+// shopping, which is the main way a grocery errand goes wrong.
+const SUBSTITUTION = {
+  ASK_ME_FIRST: { label: 'Call me before swapping anything', tone: 'bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200' },
+  SUBSTITUTE_FREELY: { label: 'Happy for you to pick something similar', tone: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-200' },
+  NO_SUBSTITUTES: { label: 'Skip it — do not substitute', tone: 'bg-red-100 text-red-900 dark:bg-red-900/30 dark:text-red-200' }
+};
+
+function ShoppingRules({ booking, className = '' }) {
+  const rule = SUBSTITUTION[booking.substitutionPreference] || SUBSTITUTION.ASK_ME_FIRST;
+  return (
+    <div className={`w-full space-y-2 ${className}`}>
+      {booking.goodsBudget != null && (
+        <p className="text-sm">
+          <strong>Spend up to £{money(booking.goodsBudget)}</strong>
+          <span className="text-muted"> on the shopping. Going over needs a reason, and the customer isn't charged the extra.</span>
+        </p>
+      )}
+      <span className={`inline-block rounded-lg px-2.5 py-1 text-sm font-semibold ${rule.tone}`}>
+        {rule.label}
+      </span>
+    </div>
+  );
+}
+
 export default function RunnerDashboard() {
   const { authUser, runners, customers, bookings, updateBooking, acceptBooking, completeRunnerTask, fetchMessages, sendMessage, updateProfile, showToast, enablePush } = useApp();
   const [activeTab, setActiveTab] = useState(tabs[0]);
@@ -46,6 +72,7 @@ export default function RunnerDashboard() {
   const [connectLoading, setConnectLoading] = useState(false);
   const [completingBooking, setCompletingBooking] = useState(null);
   const [goodsCost, setGoodsCost] = useState('');
+  const [overageReason, setOverageReason] = useState('');
   const [completeLoading, setCompleteLoading] = useState(false);
   const runner = runners.find((item) => item.id === authUser.id);
 
@@ -53,15 +80,21 @@ export default function RunnerDashboard() {
     if (!completingBooking) return;
     setCompleteLoading(true);
     try {
-      await completeRunnerTask(completingBooking.id, runner.id, Number(goodsCost) || 0);
+      await completeRunnerTask(completingBooking.id, runner.id, Number(goodsCost) || 0, overageReason.trim());
       setCompletingBooking(null);
       setGoodsCost('');
+      setOverageReason('');
     } catch {
       /* toast shown by context */
     } finally {
       setCompleteLoading(false);
     }
   };
+
+  // Live overage against the customer's agreed budget, so the runner sees the
+  // problem while typing rather than after submitting.
+  const budget = completingBooking?.goodsBudget ?? null;
+  const overage = budget == null ? 0 : Math.max(0, (Number(goodsCost) || 0) - budget);
 
   useEffect(() => {
     if (activeTab !== 'Profile' || connectStatus !== null) return;
@@ -187,6 +220,7 @@ export default function RunnerDashboard() {
                 : <p><strong>Area:</strong> {booking.postcodeArea} · full address and contact details are shared once you accept this task</p>}
               <p><strong>Instructions:</strong> {booking.instructions}</p>
             </div>
+            <ShoppingRules booking={booking} />
             {booking.status === 'Assigned' && <Button onClick={() => updateBooking(booking.id, { status: 'In Progress' })}>Start Task</Button>}
             {booking.status === 'In Progress' && <Button variant="secondary" onClick={() => { setCompletingBooking(booking); setGoodsCost(''); }}>Mark Complete</Button>}
             {/* Was gated to In Progress only, while the Messages tab listed Assigned
@@ -231,6 +265,7 @@ export default function RunnerDashboard() {
             <p className="font-bold text-ink">What's needed</p>
             <p className="mt-1 whitespace-pre-line text-muted">{booking.instructions || 'No details given.'}</p>
           </div>
+          <ShoppingRules booking={booking} />
           <p className="text-sm text-muted">{booking.postcodeArea} · full address shared once you accept</p>
           <Button onClick={() => accept(booking)}>Accept Task</Button>
         </>
@@ -447,13 +482,16 @@ export default function RunnerDashboard() {
             <div>
               <label className="mb-1 block text-sm font-bold text-ink">Cost of goods you purchased</label>
               <p className="mb-2 text-xs text-muted">Enter what you spent on the customer's behalf (e.g. groceries, prescription). Enter 0 if there were none. You'll be reimbursed this amount on top of your payout.</p>
+              {budget != null && (
+                <p className="mb-2 text-xs font-semibold text-muted">Customer's budget: £{money(budget)}</p>
+              )}
               <div className="flex items-center gap-2">
                 <span className="text-lg font-bold text-muted">£</span>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
-                  className="focus-ring min-h-11 w-full rounded-lg border border-surface-hi px-3"
+                  className={`focus-ring min-h-11 w-full rounded-lg border px-3 ${overage > 0 ? 'border-amber-500' : 'border-surface-hi'}`}
                   placeholder="0.00"
                   value={goodsCost}
                   onChange={(e) => setGoodsCost(e.target.value)}
@@ -461,8 +499,34 @@ export default function RunnerDashboard() {
                 />
               </div>
             </div>
-            <Button className="w-full" loading={completeLoading} onClick={submitComplete}>
-              {Number(goodsCost) > 0 ? `Complete & charge £${Number(goodsCost).toFixed(2)}` : 'Mark complete'}
+
+            {/* Over the agreed budget: the customer is charged their budget only,
+                so the runner needs to know the excess isn't automatically covered. */}
+            {overage > 0 && (
+              <div className="space-y-2 rounded-xl border border-amber-300 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
+                <p className="text-sm font-bold text-amber-900 dark:text-amber-200">
+                  £{money(overage)} over the customer's budget
+                </p>
+                <p className="text-xs text-amber-900/80 dark:text-amber-200/80">
+                  They'll be charged £{money(budget)} — the amount they agreed — and we'll settle the extra
+                  £{money(overage)} with you separately. Please say briefly why, so they understand the difference.
+                </p>
+                <textarea
+                  className="focus-ring min-h-20 w-full rounded-lg border border-amber-300 bg-surface p-3 text-sm dark:border-amber-800"
+                  placeholder="e.g. only the 4-pint milk was left, and the bread was a bigger loaf"
+                  value={overageReason}
+                  onChange={(e) => setOverageReason(e.target.value)}
+                />
+              </div>
+            )}
+
+            <Button
+              className="w-full"
+              loading={completeLoading}
+              disabled={overage > 0 && !overageReason.trim()}
+              onClick={submitComplete}
+            >
+              {Number(goodsCost) > 0 ? `Complete & charge £${money(Math.min(Number(goodsCost), budget ?? Number(goodsCost)))}` : 'Mark complete'}
             </Button>
           </div>
         </Modal>
