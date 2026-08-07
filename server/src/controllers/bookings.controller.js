@@ -6,7 +6,8 @@ import {
   listBookings,
   reviewBooking,
   startBooking,
-  updateBooking
+  updateBooking,
+  updateJourney
 } from '../services/bookings.service.js';
 
 export const index = async (req, res, next) => {
@@ -69,6 +70,14 @@ export const review = async (req, res, next) => {
 export const resumePayment = async (req, res, next) => {
   try {
     res.json(await getBookingClientSecret(req.user, req.params.id));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const journey = async (req, res, next) => {
+  try {
+    res.json({ booking: await updateJourney(req.user, req.params.id, req.body || {}) });
   } catch (error) {
     next(error);
   }

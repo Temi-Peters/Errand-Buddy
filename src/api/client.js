@@ -67,6 +67,7 @@ export const api = {
   createBooking: (data) => request('/bookings', { method: 'POST', body: data }),
   updateBooking: (id, data) => request(`/bookings/${id}`, { method: 'PATCH', body: data }),
   acceptBooking: (id) => request(`/bookings/${id}/accept`, { method: 'POST' }),
+  updateJourney: (id, data) => request(`/bookings/${id}/journey`, { method: 'POST', body: data }),
   startBooking: (id) => request(`/bookings/${id}/start`, { method: 'POST' }),
   completeBooking: (id, goodsCost = 0, overageReason = '') => request(`/bookings/${id}/complete`, { method: 'POST', body: { goodsCost, overageReason } }),
   reviewBooking: (id, data) => request(`/bookings/${id}/review`, { method: 'POST', body: data }),

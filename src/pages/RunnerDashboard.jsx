@@ -11,6 +11,7 @@ import AvatarUpload from '../components/AvatarUpload';
 import VerifiedBadge, { RunnerRating } from '../components/VerifiedBadge';
 import PhotoUpload from '../components/PhotoUpload';
 import { GuideModal, HelpButton, hasSeenGuide } from '../components/GuideCards';
+import { STAGES } from '../components/JourneyProgress';
 import { runnerGuide } from '../data/guides';
 import { BarChartHorizontal, BarChartVertical } from '../components/Charts';
 import Modal from '../components/Modal';
@@ -62,7 +63,7 @@ function ShoppingRules({ booking, className = '' }) {
 }
 
 export default function RunnerDashboard() {
-  const { authUser, runners, customers, bookings, updateBooking, acceptBooking, completeRunnerTask, fetchMessages, sendMessage, updateProfile, showToast, enablePush } = useApp();
+  const { authUser, runners, customers, bookings, updateBooking, acceptBooking, updateJourney, completeRunnerTask, fetchMessages, sendMessage, updateProfile, showToast, enablePush } = useApp();
   const [activeTab, setActiveTab] = useState(tabs[0]);
   const [contact, setContact] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -270,6 +271,25 @@ export default function RunnerDashboard() {
               <p><strong>Instructions:</strong> {booking.instructions}</p>
             </div>
             <ShoppingRules booking={booking} />
+            {/* One tap per leg. Location is optional and asked for each time,
+                never watched — see AppContext.updateJourney. */}
+            {['Assigned', 'In Progress'].includes(booking.status) && (
+              <div className="w-full">
+                <p className="mb-1 text-sm font-bold text-muted">Let them know where you are</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {STAGES.map((stage) => (
+                    <button
+                      key={stage.key}
+                      type="button"
+                      onClick={() => updateJourney(booking.id, stage.key, { shareLocation: true })}
+                      className={`min-h-9 rounded-lg border px-3 text-xs font-semibold ${booking.journeyStage === stage.key ? 'border-stone-900 bg-stone-900 text-white dark:border-zinc-300 dark:bg-zinc-100 dark:text-zinc-900' : 'border-surface-hi text-muted'}`}
+                    >
+                      {stage.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             {booking.status === 'Assigned' && <Button onClick={() => updateBooking(booking.id, { status: 'In Progress' })}>Start Task</Button>}
             {booking.status === 'In Progress' && <Button variant="secondary" onClick={() => { setCompletingBooking(booking); setGoodsCost(''); }}>Mark Complete</Button>}
             {/* Was gated to In Progress only, while the Messages tab listed Assigned
