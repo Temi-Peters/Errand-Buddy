@@ -5,6 +5,7 @@ import {
   create,
   index,
   journey,
+  release,
   resumePayment,
   review,
   start,
@@ -35,6 +36,7 @@ bookingsRouter.get('/:id/messages', validate(bookingIdSchema), listMessages);
 bookingsRouter.post('/:id/messages', validate(messageSchema), createMessage);
 bookingsRouter.patch('/:id', validate(updateBookingSchema), update);
 bookingsRouter.post('/:id/accept', validate(bookingIdSchema), accept);
+bookingsRouter.post('/:id/release', validate(bookingIdSchema), release);
 bookingsRouter.post('/:id/journey', validate(journeySchema), journey);
 bookingsRouter.post('/:id/start', validate(bookingIdSchema), start);
 bookingsRouter.post('/:id/complete', validate(completeBookingSchema), complete);

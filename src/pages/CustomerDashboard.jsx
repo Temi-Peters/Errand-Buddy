@@ -10,6 +10,7 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import SubstitutionRequests from '../components/SubstitutionRequests';
 import JourneyProgress from '../components/JourneyProgress';
+import ClaimThread from '../components/ClaimThread';
 import { GuideModal, HelpButton, hasSeenGuide } from '../components/GuideCards';
 import { customerGuide } from '../data/guides';
 import { BarChartHorizontal, DonutChart } from '../components/Charts';
@@ -49,6 +50,7 @@ export default function CustomerDashboard() {
   // only, and refreshed on the existing 45s cadence — a runner standing in a shop
   // cannot wait for the customer to go looking for this.
   const [subs, setSubs] = useState([]);
+  const [openClaim, setOpenClaim] = useState(null);
   // Opens itself once per person, then only on demand from Help.
   const [showGuide, setShowGuide] = useState(() => !hasSeenGuide('customer'));
 
@@ -363,6 +365,8 @@ export default function CustomerDashboard() {
           ))}
         </div>
       </div>
+
+      {openClaim && <ClaimThread claim={openClaim} onClose={() => setOpenClaim(null)} onPosted={() => fetchClaims?.()} />}
 
       {/* Where the errand is up to, above the tabs — the question people
           otherwise ring up to ask. */}

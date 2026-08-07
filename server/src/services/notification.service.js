@@ -680,6 +680,89 @@ export const notifyJourneyUpdate = (booking, phrase) => {
   });
 };
 
+// Runners used to find work only by opening the app and waiting for a 45s poll.
+// For a first-come pool that is the difference between a job being taken and a
+// job sitting there.
+export const notifyJobAvailable = (booking, runners, reason = 'new') => {
+  const service = serviceTypeToClient(booking.serviceType);
+  const date = new Date(booking.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  const title = reason === 'released' ? 'A job needs picking up' : 'New job in your area';
+
+  runners.forEach((runner) => {
+    sendPushToUser(runner.userId, {
+      title,
+      body: `${service} in ${booking.postcodeArea}, ${date}. Tap to take it.`,
+      url: RUNNER_URL,
+      tag: `job-${booking.id}`
+    });
+  });
+};
+
+// The customer's runner has handed the job back. Say so plainly rather than
+// letting them discover it when nobody turns up.
+export const notifyBookingReleased = (booking, reason) => {
+  const payer = booking.createdByCarer || booking.customer;
+  if (!payer?.user?.email) return;
+  const name = esc(payer.user.name) || 'there';
+  const service = serviceTypeToClient(booking.serviceType);
+
+  send({
+    to: payer.user.email,
+    subject: `We're finding you another runner — ${service}`,
+    html: layout(`
+      ${h1('Your runner had to hand this one back')}
+      ${p(`Hi ${name.split(' ')[0]}, the runner assigned to your ${service.toLowerCase()} can no longer do it, so we've put it back out to other local runners.`)}
+      ${reason ? p(`<strong>They said:</strong> ${esc(reason)}`) : ''}
+      ${p(`Your booking and payment are unchanged — you'll hear from us as soon as someone picks it up.`)}
+      ${btn('View your booking', `${SITE}/customer/dashboard`)}
+    `)
+  });
+
+  sendPushToUser(payer.userId, {
+    title: 'Finding you another runner',
+    body: `Your ${service.toLowerCase()} was handed back. We're re-offering it now.`,
+    url: CUSTOMER_URL,
+    tag: `booking-${booking.id}`
+  });
+};
+
+// A claim names a runner and can end in a real refund from their pay. They get
+// told, and they get to answer.
+export const notifyClaimRaisedToRunner = (claim, booking) => {
+  const email = booking.runner?.user?.email;
+  if (!email) return;
+  const name = esc(booking.runner?.user?.name) || 'there';
+
+  send({
+    to: email,
+    subject: 'A customer has raised an issue on one of your errands',
+    html: layout(`
+      ${h1('An issue has been raised')}
+      ${p(`Hi ${name.split(' ')[0]}, a customer has reported a problem with a ${serviceTypeToClient(booking.serviceType).toLowerCase()} you completed.`)}
+      ${detailTable(`${detail('Issue', esc(claim.category))}`)}
+      ${p(`<strong>Please give us your side before we decide anything.</strong> Nothing is settled until you've had the chance to reply.`)}
+      ${btn('Read it and reply', `${SITE}/runner/dashboard`)}
+    `)
+  });
+
+  sendPushToUser(booking.runner?.userId, {
+    title: 'Issue raised on one of your errands',
+    body: 'Tap to read it and give your side before anything is decided.',
+    url: RUNNER_URL,
+    tag: `claim-${claim.id}`
+  });
+};
+
+export const notifyClaimReply = (claim, recipientUserId, senderName) => {
+  if (!recipientUserId) return;
+  sendPushToUser(recipientUserId, {
+    title: `${esc(senderName) || 'Someone'} replied about the issue`,
+    body: 'Tap to read the latest message.',
+    url: CUSTOMER_URL,
+    tag: `claim-${claim.id}`
+  });
+};
+
 // A failed card leaves the booking stranded on Pending payment. Without this the
 // customer believes they've booked, nothing ever happens, and nobody finds out.
 export const notifyPaymentFailed = (booking) => {

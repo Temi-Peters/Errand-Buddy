@@ -12,13 +12,14 @@ import VerifiedBadge, { RunnerRating } from '../components/VerifiedBadge';
 import PhotoUpload from '../components/PhotoUpload';
 import { GuideModal, HelpButton, hasSeenGuide } from '../components/GuideCards';
 import { STAGES } from '../components/JourneyProgress';
+import ClaimThread from '../components/ClaimThread';
 import { runnerGuide } from '../data/guides';
 import { BarChartHorizontal, BarChartVertical } from '../components/Charts';
 import Modal from '../components/Modal';
 import { useApp } from '../context/AppContext';
 import { areas } from '../data/options';
 
-const tabs = ['Available Tasks', 'My Tasks', 'Earnings', 'Messages', 'Profile'];
+const tabs = ['Available Tasks', 'My Tasks', 'Issues', 'Earnings', 'Messages', 'Profile'];
 // Prefer the figure the server actually recorded. Recomputing from the booking
 // price is wrong on a discounted booking — the runner is paid on the full tariff
 // while the customer paid an introductory price, so price * 0.9 would understate
@@ -79,6 +80,8 @@ export default function RunnerDashboard() {
   const [overageReason, setOverageReason] = useState('');
   const [detail, setDetail] = useState({ items: [], photos: [] });
   const [showGuide, setShowGuide] = useState(() => !hasSeenGuide('runner'));
+  const [myClaims, setMyClaims] = useState([]);
+  const [openClaim, setOpenClaim] = useState(null);
   const [asking, setAsking] = useState(null); // item we're proposing a swap for
   const [askName, setAskName] = useState('');
   const [askPhoto, setAskPhoto] = useState(null);
@@ -105,6 +108,24 @@ export default function RunnerDashboard() {
   // problem while typing rather than after submitting.
   const budget = completingBooking?.goodsBudget ?? null;
   const overage = budget == null ? 0 : Math.max(0, (Number(goodsCost) || 0) - budget);
+
+  // Claims naming this runner. Previously invisible to them entirely.
+  useEffect(() => {
+    if (activeTab !== 'Issues') return;
+    api.claims().then((d) => setMyClaims(d.claims || [])).catch(() => setMyClaims([]));
+  }, [activeTab]);
+
+  const release = async (booking) => {
+    const reason = window.prompt('Let the customer know why you can\'t do this one:', '');
+    if (reason === null) return;
+    try {
+      await api.releaseBooking(booking.id, reason);
+      showToast('Handed back — we\'ll find someone else');
+      window.location.reload();
+    } catch (err) {
+      showToast(err.message || 'Could not release that task', 'error');
+    }
+  };
 
   useEffect(() => {
     if (activeTab !== 'Profile' || connectStatus !== null) return;
@@ -296,6 +317,9 @@ export default function RunnerDashboard() {
                 conversations too — so an accepted-but-not-started job had no way to
                 message from here. Both now agree. */}
             {['Assigned', 'In Progress'].includes(booking.status) && <Button variant="outline" onClick={() => setContact({ booking, customer })}><MessageSquare size={18} /> Contact Customer</Button>}
+            {['Assigned', 'In Progress'].includes(booking.status) && (
+              <Button variant="ghost" className="text-sm" onClick={() => release(booking)}>Can't do this one</Button>
+            )}
             {booking.status === 'Completed' && <p className="font-semibold text-secondary">Completed</p>}
           </>
         )}
@@ -344,6 +368,38 @@ export default function RunnerDashboard() {
         </>
       )} />) : <Card className="border-dashed text-center"><p className="font-bold text-muted">No open tasks in your area</p><p className="mt-1 text-sm text-muted">Check back later for new local errands.</p></Card>}</div>}
       {activeTab === 'My Tasks' && <div className="space-y-6">{Object.entries(groupedTasks).map(([status, items]) => <section key={status}><h2 className="mb-3 text-xl font-bold">{status}</h2><div className="grid gap-4">{items.length ? items.map(renderTask) : <Card><p className="text-muted">No {status.toLowerCase()} tasks.</p></Card>}</div></section>)}</div>}
+      {activeTab === 'Issues' && (
+        <div className="space-y-4">
+          {myClaims.length ? myClaims.map((claim) => (
+            <Card key={claim.id} className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="font-bold text-ink">{claim.category}</p>
+                <p className="text-sm text-muted">{claim.description}</p>
+                <p className="mt-1 text-sm font-semibold text-muted">
+                  {claim.status}{claim.runnerHasReplied ? ' · you have replied' : ' · you have not replied yet'}
+                </p>
+              </div>
+              <Button variant="outline" className="shrink-0" onClick={() => setOpenClaim(claim)}>
+                {claim.status === 'Open' ? 'Give your side' : 'View'}
+              </Button>
+            </Card>
+          )) : (
+            <Card className="border-dashed text-center">
+              <p className="font-bold text-muted">Nothing raised about your work</p>
+              <p className="mt-1 text-sm text-muted">If a customer reports a problem, it appears here and you can reply before anything is decided.</p>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {openClaim && (
+        <ClaimThread
+          claim={openClaim}
+          onClose={() => setOpenClaim(null)}
+          onPosted={() => api.claims().then((d) => setMyClaims(d.claims || [])).catch(() => {})}
+        />
+      )}
+
       {activeTab === 'Earnings' && (
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

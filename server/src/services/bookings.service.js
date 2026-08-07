@@ -18,6 +18,8 @@ import {
   notifyCompletionProblem,
   notifyGoodsOverage,
   notifyJourneyUpdate,
+  notifyJobAvailable,
+  notifyBookingReleased,
   notifyGoodsCharged,
   notifyReviewSubmitted,
   notifyTaskCompleted,
@@ -66,6 +68,21 @@ const assertTransition = (from, to) => {
   }
 };
 
+// A job starts restricted to its own postcode area, then opens up to everyone
+// after a minute. That was the intended design from the start: local first, but
+// a job nobody nearby wants must not sit dead.
+//
+// Implemented as a time comparison rather than a scheduled task on purpose —
+// there is no timer to run, nothing to keep awake, and it is correct the instant
+// it is read. A cron job would be a second source of truth for the same fact.
+export const AREA_EXCLUSIVE_MS = 60 * 1000;
+
+export const isRunnerEligible = (booking, runner, now = new Date()) => {
+  if (booking.postcodeArea === runner.area) return true;
+  const opened = booking.openedAt || booking.createdAt;
+  return opened ? (now.getTime() - new Date(opened).getTime()) >= AREA_EXCLUSIVE_MS : false;
+};
+
 export const listBookings = async (user) => {
   const where = {};
 
@@ -81,9 +98,13 @@ export const listBookings = async (user) => {
     if (user.runnerProfile.status !== 'ACTIVE') {
       return [];
     }
+    const widenedFrom = new Date(Date.now() - AREA_EXCLUSIVE_MS);
     where.OR = [
       { runnerId: user.runnerProfile.id },
-      { runnerId: null, status: 'PENDING', postcodeArea: user.runnerProfile.area }
+      // Own area: immediately.
+      { runnerId: null, status: 'PENDING', postcodeArea: user.runnerProfile.area },
+      // Anywhere else: only once it has gone unclaimed for a minute.
+      { runnerId: null, status: 'PENDING', openedAt: { lte: widenedFrom } }
     ];
   }
 
@@ -102,6 +123,30 @@ export const listBookings = async (user) => {
 
 // Services open for customer booking — update here when new services launch
 const BOOKABLE_SERVICE_TYPES = new Set(['GROCERY_SHOPPING', 'PRESCRIPTION_PICKUP']);
+
+// An unpaid booking sits on the customer's dashboard looking like a duplicate,
+// and — because the first-errand offer deliberately counts unpaid bookings so it
+// can't be farmed — it silently burns their discount forever.
+//
+// Swept lazily on booking creation rather than by a cron job: it is bounded,
+// costs one query, and needs nothing kept awake on a free tier.
+const ABANDONED_AFTER_MS = 24 * 60 * 60 * 1000;
+
+const expireAbandonedBookings = async (customerId) => {
+  try {
+    await prisma.booking.updateMany({
+      where: {
+        customerId,
+        status: 'PENDING_PAYMENT',
+        createdAt: { lt: new Date(Date.now() - ABANDONED_AFTER_MS) }
+      },
+      data: { status: 'CANCELLED', cancelledAt: new Date(), cancellationReason: 'Not paid for within 24 hours' }
+    });
+  } catch (err) {
+    // Never block a new booking because housekeeping failed.
+    console.error('[cleanup] Could not expire abandoned bookings:', err.message);
+  }
+};
 
 export const createBooking = async (user, data) => {
   if (user.role !== 'CUSTOMER' || !user.customerProfile) {
@@ -146,6 +191,10 @@ export const createBooking = async (user, data) => {
       ? `Your wallet balance is negative (−£${Math.abs(Number(payer.walletBalance)).toFixed(2)}). Please top up before booking on someone's behalf.`
       : `Your wallet balance is negative (−£${Math.abs(Number(payer.walletBalance)).toFixed(2)}). Please top up your wallet before booking.`);
   }
+
+  // Sweep first: an abandoned attempt from yesterday must not cost this customer
+  // their introductory offer.
+  await expireAbandonedBookings(customerId);
 
   // Introductory offer, decided entirely server-side. Eligibility is "this
   // customer has never had a booking that wasn't cancelled" — counted on the
@@ -309,6 +358,59 @@ export const updateBooking = async (user, id, data) => {
   return bookingToClient(booking);
 };
 
+// Called when a booking becomes claimable (payment cleared, or a runner dropped
+// out). Stamps the clock the widening rule reads, and tells runners a job exists
+// instead of making them sit refreshing a list.
+export const openToRunners = async (bookingId, { reason = 'new' } = {}) => {
+  const booking = await prisma.booking.update({
+    where: { id: bookingId },
+    data: { openedAt: new Date() },
+    include: bookingInclude
+  });
+
+  const runners = await prisma.runnerProfile.findMany({
+    where: { status: 'ACTIVE', area: booking.postcodeArea },
+    include: { user: true }
+  });
+
+  notifyJobAvailable(booking, runners, reason);
+  return booking;
+};
+
+// A runner handing a job back. Better a released job that other people can see
+// than a no-show nobody finds out about until the customer rings.
+export const releaseBooking = async (user, id, reason = '') => {
+  if (user.role !== 'RUNNER' || !user.runnerProfile) {
+    throw new ApiError(403, 'Only runners can release a task');
+  }
+
+  const booking = await prisma.booking.findUnique({ where: { id }, include: bookingInclude });
+  if (!booking) throw new ApiError(404, 'Booking not found');
+  if (booking.runnerId !== user.runnerProfile.id) throw new ApiError(403, 'Booking is not assigned to you');
+  if (!['ASSIGNED', 'IN_PROGRESS'].includes(booking.status)) {
+    throw new ApiError(409, 'Only a live task can be released');
+  }
+
+  await prisma.booking.update({
+    where: { id },
+    data: {
+      runnerId: null,
+      status: 'PENDING',
+      assignedAt: null,
+      startedAt: null,
+      journeyStage: 'NOT_STARTED',
+      journeyUpdatedAt: null,
+      lastLat: null,
+      lastLng: null,
+      lastLocationAt: null
+    }
+  });
+
+  notifyBookingReleased(booking, reason);
+  const reopened = await openToRunners(id, { reason: 'released' });
+  return bookingToClient(reopened);
+};
+
 export const acceptBooking = async (user, id) => {
   if (user.role !== 'RUNNER' || !user.runnerProfile) {
     throw new ApiError(403, 'Only runners can accept bookings');
@@ -320,7 +422,9 @@ export const acceptBooking = async (user, id) => {
   const booking = await prisma.booking.findUnique({ where: { id } });
   if (!booking) throw new ApiError(404, 'Booking not found');
   if (booking.status !== 'PENDING' || booking.runnerId) throw new ApiError(409, 'Booking is not available');
-  if (booking.postcodeArea !== user.runnerProfile.area) throw new ApiError(403, 'Booking is outside your area');
+  if (!isRunnerEligible(booking, user.runnerProfile)) {
+    throw new ApiError(403, 'This job is still with runners in that area. It opens up shortly if nobody takes it.');
+  }
 
   const updated = await prisma.booking.update({
     where: { id },

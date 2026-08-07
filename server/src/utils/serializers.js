@@ -60,7 +60,10 @@ export const customerToClient = (customer) => ({
   address: customer.address,
   phone: customer.phone,
   postcodeArea: customer.postcodeArea,
-  avatarUrl: customer.avatarUrl || null
+  avatarUrl: customer.avatarUrl || null,
+  // Things that are true every visit. Reaches the runner through the booking's
+  // nested customer record, which is already withheld until they're assigned.
+  standingNotes: customer.standingNotes || null
 });
 
 export const runnerToClient = (runner) => ({
@@ -167,7 +170,7 @@ export const carerLinkToClient = (link, viewerId) => {
   };
 };
 
-export const claimToClient = (claim) => ({
+export const claimToClient = (claim, viewer = null) => ({
   id: claim.id,
   bookingId: claim.bookingId,
   category: claim.category,
@@ -177,6 +180,15 @@ export const claimToClient = (claim) => ({
   refundAmount: claim.refundAmount != null ? Number(claim.refundAmount) : null,
   createdAt: claim.createdAt.toISOString(),
   resolvedAt: claim.resolvedAt ? claim.resolvedAt.toISOString() : null,
+  // Lets an admin see whether the runner has actually had their say before any
+  // refund is issued, and lets a runner see the claim is about them.
+  runnerId: claim.runnerId || null,
+  runnerHasReplied: Boolean(claim.runnerRepliedAt),
+  messageCount: claim._count?.messages ?? (claim.messages ? claim.messages.length : null),
+  viewerRole: viewer
+    ? (viewer.role === 'ADMIN' ? 'admin'
+      : viewer.runnerProfile && claim.runnerId === viewer.runnerProfile.id ? 'runner' : 'customer')
+    : null,
   customer: claim.customer ? { name: claim.customer.user?.name, email: claim.customer.user?.email } : null,
   booking: claim.booking ? {
     serviceType: serviceTypeToClient(claim.booking.serviceType),
