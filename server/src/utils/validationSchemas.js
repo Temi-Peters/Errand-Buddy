@@ -129,6 +129,28 @@ export const completeBookingSchema = z.object({
   })
 });
 
+export const bookingItemsSchema = z.object({
+  params: idParamSchema,
+  body: z.object({
+    items: z.array(z.object({
+      name: z.string().trim().min(1, 'Each item needs a name').max(200),
+      quantity: z.string().trim().max(40).optional(),
+      backupName: z.string().trim().max(200).optional().nullable()
+    })).max(60, 'That is a very long list — please split it across bookings')
+  })
+});
+
+export const itemStatusSchema = z.object({
+  params: z.object({
+    id: z.string().min(1),
+    itemId: z.string().min(1)
+  }),
+  body: z.object({
+    status: z.enum(['PENDING', 'BOUGHT', 'SUBSTITUTED', 'UNAVAILABLE']),
+    substitutedWith: z.string().trim().max(200).optional().nullable()
+  })
+});
+
 export const messageSchema = z.object({
   params: idParamSchema,
   body: z.object({

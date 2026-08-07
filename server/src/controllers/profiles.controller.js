@@ -9,7 +9,7 @@ export const runners = async (req, res, next) => {
 
     if (user.role === 'ADMIN') {
       const profiles = await prisma.runnerProfile.findMany({
-        include: { user: true },
+        include: { user: true, _count: { select: { reviews: true } } },
         orderBy: { user: { name: 'asc' } }
       });
       return res.json({ runners: profiles.map(runnerToClient) });
@@ -33,7 +33,7 @@ export const runners = async (req, res, next) => {
 
     const profiles = await prisma.runnerProfile.findMany({
       where: { id: { in: [...ids] } },
-      include: { user: true },
+      include: { user: true, _count: { select: { reviews: true } } },
       orderBy: { user: { name: 'asc' } }
     });
 

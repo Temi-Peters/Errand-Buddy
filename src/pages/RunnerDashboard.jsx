@@ -8,7 +8,8 @@ import AccountPrivacy from '../components/AccountPrivacy';
 import RunnerVerification from '../components/RunnerVerification';
 import Avatar from '../components/Avatar';
 import AvatarUpload from '../components/AvatarUpload';
-import VerifiedBadge from '../components/VerifiedBadge';
+import VerifiedBadge, { RunnerRating } from '../components/VerifiedBadge';
+import PhotoUpload from '../components/PhotoUpload';
 import { BarChartHorizontal, BarChartVertical } from '../components/Charts';
 import Modal from '../components/Modal';
 import { useApp } from '../context/AppContext';
@@ -73,6 +74,7 @@ export default function RunnerDashboard() {
   const [completingBooking, setCompletingBooking] = useState(null);
   const [goodsCost, setGoodsCost] = useState('');
   const [overageReason, setOverageReason] = useState('');
+  const [detail, setDetail] = useState({ items: [], photos: [] });
   const [completeLoading, setCompleteLoading] = useState(false);
   const runner = runners.find((item) => item.id === authUser.id);
 
@@ -113,6 +115,29 @@ export default function RunnerDashboard() {
     } finally {
       setConnectLoading(false);
     }
+  };
+
+  // Items and photos live outside the polled booking list, so they're fetched
+  // when the runner actually opens the completion modal.
+  useEffect(() => {
+    if (!completingBooking) { setDetail({ items: [], photos: [] }); return; }
+    api.bookingDetail(completingBooking.id)
+      .then(setDetail)
+      .catch(() => setDetail({ items: [], photos: [] }));
+  }, [completingBooking]);
+
+  const setItemStatus = async (itemId, status, substitutedWith = '') => {
+    try {
+      const { item } = await api.updateBookingItem(completingBooking.id, itemId, { status, substitutedWith });
+      setDetail((d) => ({ ...d, items: d.items.map((i) => (i.id === item.id ? item : i)) }));
+    } catch (err) {
+      showToast(err.message || 'Could not update that item', 'error');
+    }
+  };
+
+  const addReceipt = async ({ dataUrl }) => {
+    const { photo } = await api.addBookingPhoto(completingBooking.id, { kind: 'RECEIPT', dataUrl });
+    setDetail((d) => ({ ...d, photos: [...d.photos, photo] }));
   };
 
   useEffect(() => {
@@ -247,7 +272,7 @@ export default function RunnerDashboard() {
           <p className="mt-1 text-stone-400">{runner.area} · {runner.status === 'Active' ? 'Active runner' : `${runner.status} runner`}</p>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4"><Card><ClipboardList className="text-primary" /><p className="mt-3 text-sm font-bold text-muted">Available nearby</p><p className="text-3xl font-black">{available.length}</p></Card><Card><CheckCircle2 className="text-secondary" /><p className="mt-3 text-sm font-bold text-muted">Completed</p><p className="text-3xl font-black">{completed.length}</p></Card><Card><WalletCards className="text-primary" /><p className="mt-3 text-sm font-bold text-muted">Earnings</p><p className="text-3xl font-black">£{earnings.toFixed(0)}</p></Card><Card><Star className="text-amber-500" /><p className="mt-3 text-sm font-bold text-muted">Rating</p><p className="text-3xl font-black">{ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : '—'}</p></Card></div>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4"><Card><ClipboardList className="text-primary" /><p className="mt-3 text-sm font-bold text-muted">Available nearby</p><p className="text-3xl font-black">{available.length}</p></Card><Card><CheckCircle2 className="text-secondary" /><p className="mt-3 text-sm font-bold text-muted">Completed</p><p className="text-3xl font-black">{completed.length}</p></Card><Card><WalletCards className="text-primary" /><p className="mt-3 text-sm font-bold text-muted">Earnings</p><p className="text-3xl font-black">£{earnings.toFixed(0)}</p></Card><Card><Star className="text-amber-500" /><p className="mt-3 text-sm font-bold text-muted">Rating</p><div className="mt-1"><RunnerRating runner={runner} /></div></Card></div>
       <div className="flex justify-center">
         <div className="flex gap-2 overflow-x-auto rounded-xl bg-surface-hi p-2">
           {tabs.map((tab) => (
@@ -479,6 +504,61 @@ export default function RunnerDashboard() {
               <p className="font-bold text-ink">{completingBooking.serviceType}</p>
               <p className="text-sm text-muted">{completingBooking.date} at {completingBooking.time}</p>
             </div>
+            {/* Mark off what actually happened to each item. This is the point of
+                structuring the list — "they didn't have it" becomes a record the
+                customer can see rather than something said on the phone. */}
+            {detail.items.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-bold text-ink">How did you get on with the list?</p>
+                {detail.items.map((item) => (
+                  <div key={item.id} className="rounded-lg border border-surface-hi p-2">
+                    <p className="text-sm font-semibold text-ink">
+                      {item.name}{item.quantity ? ` · ${item.quantity}` : ''}
+                    </p>
+                    {item.backupName && (
+                      <p className="text-xs text-muted">Backup: {item.backupName}</p>
+                    )}
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {[
+                        { key: 'BOUGHT', label: 'Got it' },
+                        { key: 'SUBSTITUTED', label: 'Swapped' },
+                        { key: 'UNAVAILABLE', label: "Couldn't get" }
+                      ].map((option) => (
+                        <button
+                          key={option.key}
+                          type="button"
+                          onClick={() => setItemStatus(item.id, option.key, option.key === 'SUBSTITUTED' ? (item.backupName || '') : '')}
+                          className={`min-h-9 rounded-lg border px-3 text-xs font-semibold ${item.status === option.key ? 'border-stone-900 bg-stone-900 text-white dark:border-zinc-300 dark:bg-zinc-100 dark:text-zinc-900' : 'border-surface-hi text-muted'}`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                    {item.status === 'SUBSTITUTED' && (
+                      <input
+                        className="focus-ring mt-2 min-h-10 w-full rounded-lg border border-surface-hi px-3 text-sm"
+                        placeholder="What did you get instead?"
+                        defaultValue={item.substitutedWith || ''}
+                        onBlur={(e) => setItemStatus(item.id, 'SUBSTITUTED', e.target.value)}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Evidence for the goods charge. Without it the customer is asked to
+                take a typed number on trust — and a carer checking a relative
+                wasn't overcharged has nothing to look at. */}
+            <PhotoUpload
+              kind="RECEIPT"
+              label="Photo of the receipt"
+              hint="Shows the customer exactly what was spent on their behalf."
+              photos={detail.photos}
+              onAdd={addReceipt}
+              max={3}
+            />
+
             <div>
               <label className="mb-1 block text-sm font-bold text-ink">Cost of goods you purchased</label>
               <p className="mb-2 text-xs text-muted">Enter what you spent on the customer's behalf (e.g. groceries, prescription). Enter 0 if there were none. You'll be reimbursed this amount on top of your payout.</p>
